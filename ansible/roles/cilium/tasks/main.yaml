@@ -1,0 +1,74 @@
+# ==============================================================================
+# Cilium Role - Install CNI
+# ==============================================================================
+# Installs cilium as the container network interface (CNI)
+# Replaces flannel and kube-proxy with eBPF-based networking
+# ==============================================================================
+
+---
+# ------------------------------------------------------------------------------
+# Install Helm (required for cilium installation)
+# ------------------------------------------------------------------------------
+- name: Install Helm
+  ansible.builtin.shell: |
+    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  args:
+    creates: /usr/local/bin/helm
+
+# ------------------------------------------------------------------------------
+# Install Cilium via Helm
+# ------------------------------------------------------------------------------
+- name: Add Cilium Helm repo
+  kubernetes.core.helm_repository:
+    name: cilium
+    repo_url: https://helm.cilium.io/
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Template Cilium values
+  ansible.builtin.template:
+    src: values.yaml.j2
+    dest: /tmp/cilium-values.yaml
+    mode: "0644"
+
+- name: Install Cilium
+  kubernetes.core.helm:
+    name: cilium
+    chart_ref: cilium/cilium
+    chart_version: "{{ cilium_version }}"
+    release_namespace: kube-system
+    create_namespace: false
+    values_files:
+      - /tmp/cilium-values.yaml
+    wait: true
+    wait_timeout: 5m
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+# ------------------------------------------------------------------------------
+# Verify installation
+# ------------------------------------------------------------------------------
+- name: Wait for Cilium pods
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: kube-system
+    label_selectors:
+      - k8s-app=cilium
+    wait: true
+    wait_condition:
+      type: Ready
+      status: "True"
+    wait_timeout: 300
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Verify node is ready
+  ansible.builtin.command: kubectl get nodes
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: nodes_status
+  until: "'Ready' in nodes_status.stdout"
+  retries: 30
+  delay: 10
+  changed_when: false

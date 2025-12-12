@@ -1,0 +1,27 @@
+# ==============================================================================
+# Cilium Helm Values
+# ==============================================================================
+# Configuration for cilium on k3s single-node
+# ==============================================================================
+
+# Match k3s default pod CIDR
+ipam:
+  operator:
+    clusterPoolIPv4PodCIDRList:
+      - "10.42.0.0/16"
+
+# Single replica for single-node cluster
+operator:
+  replicas: 1
+
+# Hubble observability (disabled for now, enable later if needed)
+hubble:
+  relay:
+    enabled: false
+  ui:
+    enabled: false
+
+# Replace kube-proxy with eBPF
+kubeProxyReplacement: "true"
+k8sServiceHost: "127.0.0.1"
+k8sServicePort: "6443"

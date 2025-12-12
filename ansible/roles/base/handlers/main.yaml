@@ -1,0 +1,13 @@
+# ==============================================================================
+# Base Role - Handlers
+# ==============================================================================
+
+- name: Restart SSH
+  ansible.builtin.systemd:
+    name: ssh
+    state: restarted
+
+- name: Restart fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    state: restarted

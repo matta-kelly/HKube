@@ -1,0 +1,30 @@
+# ==============================================================================
+# H-Kube .gitignore
+# ==============================================================================
+
+# Environment (contains secrets)
+.env
+
+# Secrets
+*.agekey
+keys.txt
+
+# Kubeconfig
+kubeconfig.yaml
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Ansible
+*.retry
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store

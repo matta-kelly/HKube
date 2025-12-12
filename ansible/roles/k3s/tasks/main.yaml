@@ -1,0 +1,87 @@
+# ==============================================================================
+# K3s Role - Install Kubernetes
+# ==============================================================================
+# Installs k3s with:
+#   --flannel-backend=none     (we use cilium instead)
+#   --disable-network-policy   (cilium handles this)
+#   --disable=traefik          (we install traefik via flux)
+#   --disable=servicelb        (we use cilium's LB)
+# ==============================================================================
+
+---
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+# ------------------------------------------------------------------------------
+# Install k3s
+# ------------------------------------------------------------------------------
+- name: Download k3s install script
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s-install.sh
+    mode: "0755"
+  when: not k3s_binary.stat.exists
+
+- name: Install k3s server
+  ansible.builtin.command:
+    cmd: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: >-
+      server
+      --flannel-backend=none
+      --disable-network-policy
+      --disable=traefik
+      --disable=servicelb
+  when: not k3s_binary.stat.exists
+  changed_when: true
+
+- name: Wait for k3s to start
+  ansible.builtin.wait_for:
+    path: /etc/rancher/k3s/k3s.yaml
+    state: present
+    timeout: 60
+
+# ------------------------------------------------------------------------------
+# Configure kubeconfig on server
+# ------------------------------------------------------------------------------
+- name: Ensure .kube directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.kube"
+    state: directory
+    mode: "0755"
+
+- name: Copy kubeconfig to user directory
+  ansible.builtin.copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ ansible_env.HOME }}/.kube/config"
+    remote_src: true
+    mode: "0600"
+
+- name: Set KUBECONFIG in bashrc
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_env.HOME }}/.bashrc"
+    line: "export KUBECONFIG=$HOME/.kube/config"
+    create: true
+    mode: "0644"
+
+# ------------------------------------------------------------------------------
+# Fetch kubeconfig to local machine
+# ------------------------------------------------------------------------------
+- name: Fetch kubeconfig to control node
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ playbook_dir }}/../kubeconfig.yaml"
+    flat: true
+  run_once: true
+
+- name: Update kubeconfig server address
+  ansible.builtin.replace:
+    path: "{{ playbook_dir }}/../kubeconfig.yaml"
+    regexp: "127\\.0\\.0\\.1"
+    replace: "{{ server_ip }}"
+  delegate_to: localhost
+  become: false
+  run_once: true

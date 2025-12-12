@@ -1,0 +1,187 @@
+# ==============================================================================
+# Base Role - Server Hardening
+# ==============================================================================
+# Applied to ALL servers (Headscale VPS, home server, Hetzner workers)
+# Installs: fail2ban, ufw, unattended-upgrades
+# Configures: SSH hardening, firewall, automatic updates
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# System Updates
+# ------------------------------------------------------------------------------
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+
+# ------------------------------------------------------------------------------
+# Install Security Packages
+# ------------------------------------------------------------------------------
+
+- name: Install security packages
+  ansible.builtin.apt:
+    name:
+      - fail2ban
+      - ufw
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+
+# ------------------------------------------------------------------------------
+# Create Admin User (non-root)
+# ------------------------------------------------------------------------------
+
+- name: Create admin user
+  ansible.builtin.user:
+    name: "{{ admin_user }}"
+    groups: sudo
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Add SSH key to admin user
+  ansible.posix.authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', ssh_public_key_file) }}"
+    state: present
+
+- name: Allow admin user passwordless sudo
+  ansible.builtin.lineinfile:
+    path: /etc/sudoers.d/{{ admin_user }}
+    line: "{{ admin_user }} ALL=(ALL) NOPASSWD:ALL"
+    create: true
+    mode: "0440"
+    validate: "visudo -cf %s"
+
+# ------------------------------------------------------------------------------
+# SSH Hardening
+# ------------------------------------------------------------------------------
+
+- name: Configure SSH hardening
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    state: present
+  loop:
+    - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+    - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
+    - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
+    - { regexp: '^#?ClientAliveInterval', line: 'ClientAliveInterval 300' }
+    - { regexp: '^#?ClientAliveCountMax', line: 'ClientAliveCountMax 2' }
+  notify: Restart SSH
+
+# ------------------------------------------------------------------------------
+# Fail2Ban
+# ------------------------------------------------------------------------------
+
+- name: Configure fail2ban jail
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    mode: "0644"
+    content: |
+      # H-Kube fail2ban configuration
+      [DEFAULT]
+      bantime = 1h
+      bantime.increment = true
+      bantime.factor = 2
+      bantime.maxtime = 5w
+      findtime = 10m
+      maxretry = 3
+      backend = systemd
+      banaction = ufw
+
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      maxretry = 3
+  notify: Restart fail2ban
+
+- name: Enable and start fail2ban
+  ansible.builtin.systemd:
+    name: fail2ban
+    enabled: true
+    state: started
+
+# ------------------------------------------------------------------------------
+# UFW Firewall
+# ------------------------------------------------------------------------------
+
+- name: Set UFW default deny incoming
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Set UFW default allow outgoing
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Allow SSH through UFW
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
+- name: Allow additional ports through UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop: "{{ firewall_allow_ports | default([]) }}"
+
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
+
+# ------------------------------------------------------------------------------
+# Unattended Upgrades
+# ------------------------------------------------------------------------------
+
+- name: Configure unattended-upgrades
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: "0644"
+    content: |
+      // H-Kube unattended-upgrades configuration
+      Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}";
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESMApps:${distro_codename}-apps-security";
+        "${distro_id}ESM:${distro_codename}-infra-security";
+      };
+
+      Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Automatic-Reboot "false";
+
+- name: Enable automatic updates
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: "0644"
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+
+# ------------------------------------------------------------------------------
+# Handlers
+# ------------------------------------------------------------------------------
+
+handlers:
+  - name: Restart SSH
+    ansible.builtin.systemd:
+      name: ssh
+      state: restarted
+
+  - name: Restart fail2ban
+    ansible.builtin.systemd:
+      name: fail2ban
+      state: restarted

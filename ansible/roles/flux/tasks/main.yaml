@@ -1,0 +1,141 @@
+# ==============================================================================
+# Flux Role - Install GitOps
+# ==============================================================================
+# Installs:
+#   - Flux CD (GitOps controller)
+#   - SOPS (secret encryption)
+#   - age (encryption keys)
+#
+# Bootstraps flux to your GitHub repo for GitOps management
+# ==============================================================================
+
+---
+# ------------------------------------------------------------------------------
+# Install CLI tools
+# ------------------------------------------------------------------------------
+- name: Install Flux CLI
+  ansible.builtin.shell: |
+    curl -s https://fluxcd.io/install.sh | bash
+  args:
+    creates: /usr/local/bin/flux
+
+- name: Install SOPS
+  ansible.builtin.get_url:
+    url: "https://github.com/getsops/sops/releases/download/v{{ sops_version }}/sops-v{{ sops_version }}.linux.amd64"
+    dest: /usr/local/bin/sops
+    mode: "0755"
+
+- name: Install age
+  ansible.builtin.apt:
+    name: age
+    state: present
+
+# ------------------------------------------------------------------------------
+# Generate age encryption key
+# ------------------------------------------------------------------------------
+- name: Check for existing age key
+  ansible.builtin.stat:
+    path: "{{ ansible_env.HOME }}/.config/sops/age/keys.txt"
+  register: age_key
+
+- name: Create age key directory
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/.config/sops/age"
+    state: directory
+    mode: "0700"
+  when: not age_key.stat.exists
+
+- name: Generate age key pair
+  ansible.builtin.shell: |
+    age-keygen -o {{ ansible_env.HOME }}/.config/sops/age/keys.txt
+  when: not age_key.stat.exists
+  changed_when: true
+
+- name: Read age public key
+  ansible.builtin.shell: |
+    grep 'public key' {{ ansible_env.HOME }}/.config/sops/age/keys.txt | cut -d ':' -f2 | tr -d ' '
+  register: age_pubkey
+  changed_when: false
+
+- name: Set age_public_key fact
+  ansible.builtin.set_fact:
+    age_public_key: "{{ age_pubkey.stdout }}"
+
+- name: Display age public key
+  ansible.builtin.debug:
+    msg: "Age public key: {{ age_public_key }}"
+
+# ------------------------------------------------------------------------------
+# Update .sops.yaml with generated key
+# ------------------------------------------------------------------------------
+- name: Update .sops.yaml with age public key
+  ansible.builtin.template:
+    src: sops.yaml.j2
+    dest: "{{ playbook_dir }}/../../.sops.yaml"
+    mode: "0644"
+  delegate_to: localhost
+  become: false
+
+# ------------------------------------------------------------------------------
+# Create flux-system namespace and secrets
+# ------------------------------------------------------------------------------
+- name: Create flux-system namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: flux-system
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+- name: Create SOPS age secret
+  ansible.builtin.shell: |
+    kubectl create secret generic sops-age \
+      --namespace=flux-system \
+      --from-file=age.agekey={{ ansible_env.HOME }}/.config/sops/age/keys.txt \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: true
+
+# ------------------------------------------------------------------------------
+# Bootstrap Flux
+# ------------------------------------------------------------------------------
+- name: Check flux prerequisites
+  ansible.builtin.command: flux check --pre
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: flux_check
+  changed_when: false
+  failed_when: flux_check.rc != 0
+
+- name: Bootstrap Flux
+  ansible.builtin.command: >
+    flux bootstrap github
+    --owner={{ github_user }}
+    --repository={{ github_repo }}
+    --branch={{ github_branch }}
+    --path=clusters
+    --personal
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+    GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+  when: lookup('env', 'GITHUB_TOKEN') != ''
+  changed_when: true
+
+- name: Flux bootstrap instructions (if no GITHUB_TOKEN)
+  ansible.builtin.debug:
+    msg: |
+      GITHUB_TOKEN not set. Run manually:
+
+      export GITHUB_TOKEN=<your-token>
+      export KUBECONFIG={{ playbook_dir }}/../kubeconfig.yaml
+      flux bootstrap github \
+        --owner={{ github_user }} \
+        --repository={{ github_repo }} \
+        --branch={{ github_branch }} \
+        --path=clusters \
+        --personal
+  when: lookup('env', 'GITHUB_TOKEN') == ''

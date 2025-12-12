@@ -1,0 +1,10 @@
+# ==============================================================================
+# Cilium
+# ==============================================================================
+# Installed via Ansible during bootstrap, not managed by Flux
+# This placeholder exists so the directory structure is complete
+# ==============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []

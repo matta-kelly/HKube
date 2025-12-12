@@ -1,0 +1,18 @@
+# ==============================================================================
+# Headscale VPS Playbook
+# ==============================================================================
+# Usage: make headscale-configure
+# ==============================================================================
+
+---
+- name: Configure Headscale VPS
+  hosts: headscale
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Verify connectivity
+      ansible.builtin.ping:
+
+  roles:
+    - role: base

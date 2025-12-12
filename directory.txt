@@ -1,0 +1,71 @@
+.
+├── ansible
+│   ├── ansible.cfg
+│   ├── headscale.yaml
+│   ├── inventory.yaml
+│   ├── roles
+│   │   ├── base
+│   │   │   ├── handlers
+│   │   │   │   └── main.yaml
+│   │   │   └── tasks
+│   │   │       └── main.yaml
+│   │   ├── cilium
+│   │   │   ├── tasks
+│   │   │   │   └── main.yaml
+│   │   │   └── templates
+│   │   │       └── values.yaml.j2
+│   │   ├── common
+│   │   │   └── tasks
+│   │   │       └── main.yaml
+│   │   ├── flux
+│   │   │   ├── tasks
+│   │   │   │   └── main.yaml
+│   │   │   └── templates
+│   │   │       └── sops.yaml.j2
+│   │   └── k3s
+│   │       └── tasks
+│   │           └── main.yaml
+│   └── site.yaml
+├── clusters
+│   ├── apps
+│   │   ├── immich
+│   │   │   └── kustomization.yaml
+│   │   ├── kustomization.yaml
+│   │   ├── postgres-cluster
+│   │   │   └── kustomization.yaml
+│   │   └── vaultwarden
+│   │       └── kustomization.yaml
+│   ├── flux-system
+│   │   └── kustomization.yaml
+│   ├── infrastructure
+│   │   ├── cilium
+│   │   │   └── kustomization.yaml
+│   │   ├── cloudnative-pg
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── namespace.yaml
+│   │   │   ├── release.yaml
+│   │   │   └── repository.yaml
+│   │   ├── kustomization.yaml
+│   │   ├── seaweedfs
+│   │   │   └── kustomization.yaml
+│   │   └── traefik
+│   │       ├── kustomization.yaml
+│   │       ├── release.yaml
+│   │       └── repository.yaml
+│   └── kustomization.yaml
+├── .env
+├── .env.example
+├── .envrc
+├── .gitignore
+├── Makefile
+├── Readme.md
+├── .sops.yaml
+└── terraform
+    ├── .gitignore
+    └── headscale-vps
+        ├── .gitignore
+        ├── main.tf
+        ├── outputs.tf
+        └── variables.tf
+
+29 directories, 40 files

@@ -1,0 +1,36 @@
+# ==============================================================================
+# h-kube Bootstrap Playbook
+# ==============================================================================
+# Installs: k3s + cilium + flux + sops/age
+#
+# Usage:
+#   export SERVER_IP="192.168.1.100"
+#   export GITHUB_USER="your-username"
+#   export GITHUB_TOKEN="ghp_xxxxx"
+#   ansible-playbook site.yaml
+#
+# ==============================================================================
+
+---
+- name: Bootstrap K3s Cluster
+  hosts: k3s_cluster
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - server_ip | length > 0
+          - github_user | length > 0
+        fail_msg: "Required env vars: SERVER_IP, GITHUB_USER"
+
+    - name: Verify connectivity
+      ansible.builtin.ping:
+
+  roles:
+    - role: base
+    - role: common
+    - role: k3s
+    - role: cilium
+    - role: flux

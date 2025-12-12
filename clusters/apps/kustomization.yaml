@@ -1,0 +1,10 @@
+# ==============================================================================
+# Applications
+# ==============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources: []
+  # - postgres-cluster  # TODO: Enable when ready
+  # - vaultwarden       # TODO: Enable when ready
+  # - immich            # TODO: Enable when ready

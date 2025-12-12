@@ -1,0 +1,14 @@
+# ==============================================================================
+# Infrastructure Components
+# ==============================================================================
+# Core services that apps depend on
+# ==============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - traefik
+  - cloudnative-pg
+  # - cilium      # Installed via Ansible, not Flux
+  # - headscale   # TODO: Enable when ready
+  # - seaweedfs   # TODO: Enable when ready
