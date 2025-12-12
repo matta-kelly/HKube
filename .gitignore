@@ -20,6 +20,7 @@ kubeconfig.yaml
 
 # Ansible
 *.retry
+ansible/inventory.yml
 
 # Editors
 .vscode/

@@ -171,17 +171,3 @@
       APT::Periodic::Unattended-Upgrade "1";
       APT::Periodic::AutocleanInterval "7";
 
-# ------------------------------------------------------------------------------
-# Handlers
-# ------------------------------------------------------------------------------
-
-handlers:
-  - name: Restart SSH
-    ansible.builtin.systemd:
-      name: ssh
-      state: restarted
-
-  - name: Restart fail2ban
-    ansible.builtin.systemd:
-      name: fail2ban
-      state: restarted

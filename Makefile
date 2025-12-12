@@ -22,7 +22,6 @@ help:
 	@echo "    make encrypt FILE=...     - Encrypt with SOPS"
 	@echo "    make decrypt FILE=...     - Decrypt with SOPS"
 	@echo ""
-
 # ------------------------------------------------------------------------------
 # Headscale VPS - Terraform
 # ------------------------------------------------------------------------------
@@ -38,11 +37,10 @@ headscale:
 		cd terraform/headscale-vps && \
 		terraform init && \
 		terraform apply'
+	@./scripts/generate-inventory.sh
 	@echo ""
 	@echo "=========================================="
-	@echo "Next steps:"
-	@echo "  1. Add to .env: HEADSCALE_IP=<ip from above>"
-	@echo "  2. Run: make headscale-init"
+	@echo "Inventory generated. Run: make headscale-init"
 	@echo "=========================================="
 
 headscale-destroy:
@@ -58,38 +56,27 @@ headscale-destroy:
 # ------------------------------------------------------------------------------
 
 headscale-init:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && test -n "$$HEADSCALE_IP" || (echo "HEADSCALE_IP not set" && exit 1)'
+	@test -f ansible/inventory.yml || (echo "Run 'make headscale' first" && exit 1)
 	@echo "Initializing Headscale VPS (first run, as root)..."
-	@bash -c 'source .env && \
-		cd ansible && \
-		ansible-playbook headscale.yaml'
+	@cd ansible && ansible-playbook headscale.yaml
 	@echo ""
 	@echo "=========================================="
 	@echo "Done! Root login now disabled."
-	@echo ""
-	@echo "Add to ~/.ssh/config:"
-	@echo ""
-	@bash -c 'source .env && echo "Host headscale"'
-	@bash -c 'source .env && echo "  HostName $$HEADSCALE_IP"'
-	@bash -c 'source .env && echo "  User $$HEADSCALE_USER"'
-	@bash -c 'source .env && echo "  IdentityFile $$SSH_PUBLIC_KEY_FILE" | sed "s/.pub//"'
-	@echo "  IdentitiesOnly yes"
-	@echo ""
-	@echo "Then: ssh headscale"
+	@echo "Run: make headscale-ssh"
 	@echo "=========================================="
 
 headscale-configure:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && test -n "$$HEADSCALE_IP" || (echo "HEADSCALE_IP not set" && exit 1)'
-	@echo "Configuring Headscale VPS (as $$HEADSCALE_USER)..."
+	@test -f ansible/inventory.yml || (echo "Run 'make headscale' first" && exit 1)
+	@echo "Configuring Headscale VPS..."
 	@bash -c 'source .env && \
 		cd ansible && \
-		ansible-playbook headscale.yaml -e "ansible_user=$$HEADSCALE_USER"'
+		ansible-playbook headscale.yaml -e "ansible_user=$${HEADSCALE_USER:-mkultra}"'
 
 headscale-ssh:
-	@bash -c 'source .env && ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} $$HEADSCALE_USER@$$HEADSCALE_IP'
-
+	@bash -c 'source .env && \
+		HEADSCALE_IP=$$(cd terraform/headscale-vps && terraform output -raw ipv4_address) && \
+		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} $${HEADSCALE_USER:-mkultra}@$$HEADSCALE_IP'
+		
 # ------------------------------------------------------------------------------
 # Home Server
 # ------------------------------------------------------------------------------
