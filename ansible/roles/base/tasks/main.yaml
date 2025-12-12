@@ -114,6 +114,12 @@
 # UFW Firewall
 # ------------------------------------------------------------------------------
 
+- name: Allow SSH through UFW
+  community.general.ufw:
+    rule: allow
+    port: "22"
+    proto: tcp
+
 - name: Set UFW default deny incoming
   community.general.ufw:
     direction: incoming
@@ -123,12 +129,6 @@
   community.general.ufw:
     direction: outgoing
     policy: allow
-
-- name: Allow SSH through UFW
-  community.general.ufw:
-    rule: allow
-    port: "22"
-    proto: tcp
 
 - name: Allow additional ports through UFW
   community.general.ufw:

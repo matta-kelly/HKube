@@ -1,0 +1,45 @@
+# ==============================================================================
+# Headscale Role - Install and Configure
+# ==============================================================================
+
+- name: Download Headscale
+  ansible.builtin.get_url:
+    url: "https://github.com/juanfont/headscale/releases/download/v{{ headscale_version }}/headscale_{{ headscale_version }}_linux_amd64.deb"
+    dest: "/tmp/headscale.deb"
+    mode: "0644"
+
+- name: Install Headscale
+  ansible.builtin.apt:
+    deb: /tmp/headscale.deb
+
+- name: Create Headscale config directory
+  ansible.builtin.file:
+    path: /etc/headscale
+    state: directory
+    mode: "0755"
+
+- name: Configure Headscale
+  ansible.builtin.template:
+    src: config.yaml.j2
+    dest: /etc/headscale/config.yaml
+    mode: "0600"
+  notify: Restart Headscale
+
+- name: Set Headscale config ownership
+  ansible.builtin.file:
+    path: /etc/headscale/config.yaml
+    owner: headscale
+    group: headscale
+    mode: "0600"
+
+- name: Enable and start Headscale
+  ansible.builtin.systemd:
+    name: headscale
+    enabled: true
+    state: started
+
+- name: Wait for Headscale to start
+  ansible.builtin.wait_for:
+    port: 443
+    delay: 5
+    timeout: 60

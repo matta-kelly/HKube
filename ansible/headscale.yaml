@@ -16,3 +16,4 @@
 
   roles:
     - role: base
+    - role: headscale
