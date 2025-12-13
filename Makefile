@@ -32,8 +32,12 @@ help:
 setup:
 	@echo "Setting up h-kube..."
 	@test -f .env || cp .env.example .env
-	@test -f .vault_password || (openssl rand -base64 32 > .vault_password && chmod 600 .vault_password)
+	@./scripts/ensure-vault.sh
 	@mkdir -p ansible/group_vars/all
+	@bash -c 'source .env 2>/dev/null && \
+		if [ -n "$$HCLOUD_TOKEN" ] && command -v hcloud &>/dev/null; then \
+			hcloud context list | grep -q h-kube || echo "$$HCLOUD_TOKEN" | hcloud context create h-kube; \
+		fi'
 	@echo ""
 	@echo "Done. Edit .env with your values, then run: make headscale"
 
