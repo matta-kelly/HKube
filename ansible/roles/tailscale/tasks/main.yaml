@@ -1,0 +1,41 @@
+# ==============================================================================
+# Tailscale Role - Connect node to Headscale
+# ==============================================================================
+
+- name: Add Tailscale apt key
+  ansible.builtin.get_url:
+    url: https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
+
+- name: Add Tailscale apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/ubuntu noble main"
+    state: present
+    filename: tailscale
+
+- name: Install Tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+    update_cache: true
+
+- name: Check if already connected to Tailscale
+  ansible.builtin.command: tailscale status
+  register: tailscale_status
+  changed_when: false
+  failed_when: false
+
+- name: Connect to Headscale
+  ansible.builtin.command: >
+    tailscale up
+    --login-server https://{{ headscale_domain }}
+    --authkey {{ headscale_authkey }}
+    --hostname {{ inventory_hostname }}
+  when: tailscale_status.rc != 0
+
+- name: Enable Tailscale service
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started

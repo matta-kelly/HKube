@@ -30,7 +30,9 @@
 
   roles:
     - role: base
+    - role: tailscale
     - role: common
     - role: k3s
     - role: cilium
     - role: flux
+

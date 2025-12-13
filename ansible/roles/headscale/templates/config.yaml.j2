@@ -21,6 +21,7 @@ derp:
     region_code: "hs"
     region_name: "Headscale Embedded"
     stun_listen_addr: 0.0.0.0:3478
+    private_key_path: /var/lib/headscale/derp_server_private.key
   urls: []
   auto_update_enabled: true
   update_frequency: 24h
@@ -44,15 +45,6 @@ dns:
     global:
       - 1.1.1.1
       - 9.9.9.9
-
-derp:
-  server:
-    enabled: true
-    region_id: 999
-    region_code: "hs"
-    region_name: "Headscale Embedded"
-    stun_listen_addr: 0.0.0.0:3478
-    private_key_path: /var/lib/headscale/derp_server_private.key
 
 tls_cert_path: ""
 tls_key_path: ""

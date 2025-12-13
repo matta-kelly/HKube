@@ -29,3 +29,5 @@ ansible/inventory.yml
 
 # OS
 .DS_Store
+
+.vault_password

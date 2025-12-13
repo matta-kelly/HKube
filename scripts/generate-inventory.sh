@@ -13,6 +13,7 @@ all:
   vars:
     admin_user: "${HEADSCALE_USER:-mkultra}"
     ssh_public_key_file: "${SSH_PUBLIC_KEY_FILE:-~/.ssh/id_ed25519_hetzner.pub}"
+    headscale_domain: "${HEADSCALE_DOMAIN}"
     github_user: "${GITHUB_USER}"
     github_token: "${GITHUB_TOKEN}"
     github_repo: "${GITHUB_REPO:-h-kube}"
@@ -41,7 +42,7 @@ all:
         home-server:
           ansible_host: ${SERVER_IP}
           ansible_user: ${SERVER_USER:-mkultra}
-          ansible_ssh_private_key_file: ${SSH_PUBLIC_KEY_FILE%.pub}
+          ansible_ssh_private_key_file: ${SERVER_SSH_KEY}
           server_ip: ${SERVER_IP}
           firewall_allow_ports:
             - { port: "6443", proto: "tcp" }

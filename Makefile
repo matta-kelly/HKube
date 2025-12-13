@@ -2,32 +2,47 @@
 # H-Kube Makefile
 # ==============================================================================
 
-.PHONY: help headscale headscale-destroy headscale-init headscale-configure headscale-ssh bootstrap ansible-ping encrypt decrypt
+.PHONY: help setup headscale headscale-destroy headscale-init headscale-configure headscale-ssh bootstrap ansible-ping encrypt decrypt
 
 help:
 	@echo "H-Kube Commands:"
 	@echo ""
+	@echo "  Setup:"
+	@echo "    make setup              - Initial setup (creates .env, .vault_password)"
+	@echo ""
 	@echo "  Headscale VPS:"
-	@echo "    make headscale            - Create VPS (Terraform)"
-	@echo "    make headscale-init       - First-time setup (as root)"
-	@echo "    make headscale-configure  - Re-configure (as HEADSCALE_USER)"
-	@echo "    make headscale-ssh        - SSH into VPS"
-	@echo "    make headscale-destroy    - Destroy VPS"
+	@echo "    make headscale          - Create Headscale VPS (Terraform)"
+	@echo "    make headscale-destroy  - Destroy Headscale VPS"
+	@echo "    make headscale-init     - First-time VPS config (as root)"
+	@echo "    make headscale-configure - Re-run VPS config (as admin user)"
+	@echo "    make headscale-ssh      - SSH into Headscale VPS"
 	@echo ""
 	@echo "  Home Server:"
-	@echo "    make bootstrap            - Bootstrap k3s cluster"
-	@echo "    make ansible-ping         - Test connectivity"
+	@echo "    make bootstrap          - Full k3s + Cilium + Flux setup"
+	@echo "    make ansible-ping       - Test Ansible connectivity"
 	@echo ""
 	@echo "  Secrets:"
-	@echo "    make encrypt FILE=...     - Encrypt with SOPS"
-	@echo "    make decrypt FILE=...     - Decrypt with SOPS"
+	@echo "    make encrypt FILE=...   - Encrypt with SOPS"
+	@echo "    make decrypt FILE=...   - Decrypt with SOPS"
+
+# ------------------------------------------------------------------------------
+# Initial Setup
+# ------------------------------------------------------------------------------
+
+setup:
+	@echo "Setting up h-kube..."
+	@test -f .env || cp .env.example .env
+	@test -f .vault_password || (openssl rand -base64 32 > .vault_password && chmod 600 .vault_password)
+	@mkdir -p ansible/group_vars/all
 	@echo ""
+	@echo "Done. Edit .env with your values, then run: make headscale"
+
 # ------------------------------------------------------------------------------
 # Headscale VPS - Terraform
 # ------------------------------------------------------------------------------
 
 headscale:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
+	@test -f .env || (echo "Error: .env not found. Run: make setup" && exit 1)
 	@bash -c 'source .env && test -n "$$HCLOUD_TOKEN" || (echo "HCLOUD_TOKEN not set" && exit 1)'
 	@bash -c 'source .env && test -n "$$SSH_PUBLIC_KEY_FILE" || (echo "SSH_PUBLIC_KEY_FILE not set" && exit 1)'
 	@echo "Creating Headscale VPS..."
@@ -56,6 +71,7 @@ headscale-destroy:
 # ------------------------------------------------------------------------------
 
 headscale-init:
+	@./scripts/ensure-vault.sh
 	@test -f ansible/inventory.yml || (echo "Run 'make headscale' first" && exit 1)
 	@echo "Initializing Headscale VPS (first run, as root)..."
 	@cd ansible && ansible-playbook headscale.yaml
@@ -66,30 +82,28 @@ headscale-init:
 	@echo "=========================================="
 
 headscale-configure:
+	@./scripts/ensure-vault.sh
 	@test -f ansible/inventory.yml || (echo "Run 'make headscale' first" && exit 1)
 	@echo "Configuring Headscale VPS..."
 	@bash -c 'source .env && \
 		cd ansible && \
 		ansible-playbook headscale.yaml -e "ansible_user=$${HEADSCALE_USER:-mkultra}"'
 
+
 headscale-ssh:
 	@bash -c 'source .env && \
 		HEADSCALE_IP=$$(cd terraform/headscale-vps && terraform output -raw ipv4_address) && \
 		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} $${HEADSCALE_USER:-mkultra}@$$HEADSCALE_IP'
-		
+
 # ------------------------------------------------------------------------------
-# Home Server
+# Home Server - Ansible
 # ------------------------------------------------------------------------------
 
 bootstrap:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && test -n "$$SERVER_IP" || (echo "SERVER_IP not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$GITHUB_USER" || (echo "GITHUB_USER not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$GITHUB_TOKEN" || (echo "GITHUB_TOKEN not set" && exit 1)'
+	@./scripts/ensure-vault.sh
+	@test -f ansible/inventory.yml || (echo "Run 'make headscale' first" && exit 1)
 	@echo "Bootstrapping k3s cluster..."
-	@bash -c 'source .env && \
-		cd ansible && \
-		ansible-playbook site.yaml'
+	@cd ansible && ansible-playbook site.yaml
 
 ansible-ping:
 	@bash -c 'source .env && \
