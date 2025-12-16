@@ -42,15 +42,7 @@
 │   │       └── tasks
 │   │           └── main.yaml
 │   └── site.yaml
-├── clusters
-│   ├── apps
-│   │   ├── immich
-│   │   │   └── kustomization.yaml
-│   │   ├── kustomization.yaml
-│   │   ├── postgres-cluster
-│   │   │   └── kustomization.yaml
-│   │   └── vaultwarden
-│   │       └── kustomization.yaml
+├── cluster
 │   ├── flux-system
 │   │   └── kustomization.yaml
 │   ├── infrastructure
@@ -68,7 +60,17 @@
 │   │       ├── kustomization.yaml
 │   │       ├── release.yaml
 │   │       └── repository.yaml
-│   └── kustomization.yaml
+│   ├── kustomization.yaml
+│   └── namespaces
+│       ├── homelab
+│       │   ├── immich
+│       │   │   └── kustomization.yaml
+│       │   ├── kustomization.yaml
+│       │   ├── postgres-cluster
+│       │   │   └── kustomization.yaml
+│       │   └── vaultwarden
+│       │       └── kustomization.yaml
+│       └── lotus-lake
 ├── .env
 ├── .env.example
 ├── .envrc
@@ -102,4 +104,4 @@
 │       └── variables.tf
 └── .vault_password
 
-46 directories, 57 files
+48 directories, 57 files
