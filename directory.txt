@@ -63,14 +63,11 @@
 │   ├── kustomization.yaml
 │   └── namespaces
 │       ├── homelab
-│       │   ├── immich
-│       │   │   └── kustomization.yaml
-│       │   ├── kustomization.yaml
-│       │   ├── postgres-cluster
-│       │   │   └── kustomization.yaml
-│       │   └── vaultwarden
-│       │       └── kustomization.yaml
+│       │   ├── namespace.yaml
+│       │   └── source.yaml
 │       └── lotus-lake
+│           ├── namespace.yaml
+│           └── source.yaml
 ├── .env
 ├── .env.example
 ├── .envrc
@@ -104,4 +101,4 @@
 │       └── variables.tf
 └── .vault_password
 
-48 directories, 57 files
+45 directories, 57 files

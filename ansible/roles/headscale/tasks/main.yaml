@@ -63,7 +63,7 @@
   register: authkey_output
   when: not authkey_file.stat.exists
 
-- name: Save authkey to file
+- name: Save authkey to server
   ansible.builtin.copy:
     content: "{{ authkey_output.stdout }}"
     dest: /etc/headscale/authkey
@@ -77,17 +77,12 @@
     src: /etc/headscale/authkey
   register: authkey_content
 
-- name: Save authkey to local vault
-  ansible.builtin.copy:
-    content: |
-      ---
-      headscale_authkey: "{{ authkey_content.content | b64decode | trim }}"
-    dest: "{{ playbook_dir }}/group_vars/all/vault.yaml"
-  delegate_to: localhost
-  become: false
-
-- name: Encrypt vault file
-  ansible.builtin.command: ansible-vault encrypt {{ playbook_dir }}/group_vars/all/vault.yaml
-  delegate_to: localhost
-  become: false
-  when: authkey_output.changed
+- name: Display authkey
+  ansible.builtin.debug:
+    msg: |
+      
+      =============================================
+      SAVE THIS TO YOUR PASSWORD MANAGER AND .env:
+      
+      HEADSCALE_AUTHKEY="{{ authkey_content.content | b64decode | trim }}"
+      =============================================

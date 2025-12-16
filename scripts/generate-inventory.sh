@@ -1,11 +1,14 @@
 #!/bin/bash
 set -e
 
-# Get Terraform outputs
-HEADSCALE_IP=$(cd terraform/headscale-vps && terraform output -raw ipv4_address 2>/dev/null || echo "")
-
-# Source .env for non-Terraform vars
+# Source .env first
 source .env
+
+# Get Terraform output (overrides .env if available)
+TF_IP=$(cd terraform/headscale-vps && terraform output -raw ipv4_address 2>/dev/null || echo "")
+if [ -n "$TF_IP" ]; then
+    HEADSCALE_IP="$TF_IP"
+fi
 
 # Generate inventory
 cat > ansible/inventory.yml << EOF
@@ -14,8 +17,8 @@ all:
     admin_user: "${HEADSCALE_USER:-mkultra}"
     ssh_public_key_file: "${SSH_PUBLIC_KEY_FILE:-~/.ssh/id_ed25519_hetzner.pub}"
     headscale_domain: "${HEADSCALE_DOMAIN}"
+    headscale_authkey: "${HEADSCALE_AUTHKEY}"
     github_user: "${GITHUB_USER}"
-    github_token: "${GITHUB_TOKEN}"
     github_repo: "${GITHUB_REPO:-h-kube}"
     github_branch: "${GITHUB_BRANCH:-main}"
     k3s_version: "v1.31.3+k3s1"
