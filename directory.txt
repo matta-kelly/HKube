@@ -1,8 +1,12 @@
 .
 ├── ansible
 │   ├── ansible.cfg
+│   ├── group_vars
+│   │   └── all
+│   │       ├── .gitkeep
+│   │       └── vault.yaml
 │   ├── headscale.yaml
-│   ├── inventory.yaml
+│   ├── inventory.yml
 │   ├── roles
 │   │   ├── base
 │   │   │   ├── handlers
@@ -22,7 +26,19 @@
 │   │   │   │   └── main.yaml
 │   │   │   └── templates
 │   │   │       └── sops.yaml.j2
-│   │   └── k3s
+│   │   ├── headscale
+│   │   │   ├── handlers
+│   │   │   │   └── main.yaml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yaml
+│   │   │   └── templates
+│   │   │       └── config.yaml.j2
+│   │   ├── k3s
+│   │   │   └── tasks
+│   │   │       └── main.yaml
+│   │   └── tailscale
+│   │       ├── handlers
+│   │       │   └── main.yaml
 │   │       └── tasks
 │   │           └── main.yaml
 │   └── site.yaml
@@ -59,13 +75,31 @@
 ├── .gitignore
 ├── Makefile
 ├── Readme.md
+├── scripts
+│   ├── ensure-vault.sh
+│   └── generate-inventory.sh
 ├── .sops.yaml
-└── terraform
-    ├── .gitignore
-    └── headscale-vps
-        ├── .gitignore
-        ├── main.tf
-        ├── outputs.tf
-        └── variables.tf
+├── terraform
+│   ├── .gitignore
+│   └── headscale-vps
+│       ├── .gitignore
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── .terraform
+│       │   └── providers
+│       │       └── registry.terraform.io
+│       │           └── hetznercloud
+│       │               └── hcloud
+│       │                   └── 1.57.0
+│       │                       └── linux_amd64
+│       │                           ├── CHANGELOG.md
+│       │                           ├── LICENSE
+│       │                           ├── README.md
+│       │                           └── terraform-provider-hcloud_v1.57.0
+│       ├── .terraform.lock.hcl
+│       ├── terraform.tfstate
+│       ├── terraform.tfstate.backup
+│       └── variables.tf
+└── .vault_password
 
-29 directories, 40 files
+46 directories, 57 files

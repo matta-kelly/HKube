@@ -2,32 +2,52 @@
 # H-Kube .gitignore
 # ==============================================================================
 
-# Environment (contains secrets)
+# ------------------------------------------------------------------------------
+# Secrets - NEVER commit these
+# ------------------------------------------------------------------------------
+.vault_password
 .env
+*.decrypted
+*.decrypted.yaml
+*.decrypted.yml
 
-# Secrets
-*.agekey
-keys.txt
-
-# Kubeconfig
+# Local kubeconfig (contains cluster creds)
 kubeconfig.yaml
 
+# ------------------------------------------------------------------------------
 # Terraform
-**/.terraform/
-*.tfstate
-*.tfstate.*
+# ------------------------------------------------------------------------------
+terraform/.terraform/
+terraform/**/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/**/*.tfstate
+terraform/**/*.tfstate.*
 .terraform.lock.hcl
+**/.terraform.lock.hcl
 
+# But DO commit terraform lock file for reproducibility
+!terraform/headscale-vps/.terraform.lock.hcl
+
+# ------------------------------------------------------------------------------
 # Ansible
+# ------------------------------------------------------------------------------
 *.retry
 ansible/inventory.yml
 
-# Editors
-.vscode/
+# ------------------------------------------------------------------------------
+# Editor/IDE
+# ------------------------------------------------------------------------------
 .idea/
+.vscode/
 *.swp
-
-# OS
+*.swo
+*~
 .DS_Store
 
-.vault_password
+# ------------------------------------------------------------------------------
+# What IS safe to commit
+# ------------------------------------------------------------------------------
+# - ansible/group_vars/all/vault.yaml (encrypted)
+# - .sops.yaml (contains public key only)
+# - ansible/inventory.yml (no secrets, just host info)
