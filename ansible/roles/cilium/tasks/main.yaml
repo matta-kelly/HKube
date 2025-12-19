@@ -18,6 +18,10 @@
 # ------------------------------------------------------------------------------
 # Install Cilium via Helm
 # ------------------------------------------------------------------------------
+- name: Set facts from environment
+  ansible.builtin.set_fact:
+    cilium_version: "{{ lookup('env', 'CILIUM_VERSION') | default('1.16.4', true) }}"
+
 - name: Add Cilium Helm repo
   kubernetes.core.helm_repository:
     name: cilium
