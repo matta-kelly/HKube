@@ -1,12 +1,12 @@
 # ==============================================================================
-# Headscale VPS Playbook
+# Anchor VPS Playbook
 # ==============================================================================
-# Usage: make headscale-configure
+# Usage: make anchor-init
 # ==============================================================================
 
 ---
-- name: Configure Headscale VPS
-  hosts: headscale
+- name: Configure Anchor VPS
+  hosts: anchor
   gather_facts: true
   become: true
 
@@ -17,3 +17,5 @@
   roles:
     - role: base
     - role: headscale
+    - role: tailscale
+    - role: haproxy

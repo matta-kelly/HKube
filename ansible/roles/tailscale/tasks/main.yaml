@@ -31,7 +31,7 @@
     tailscale up
     --login-server https://{{ headscale_domain }}
     --authkey {{ headscale_authkey }}
-    --hostname {{ inventory_hostname }}
+    --hostname {{ tailscale_hostname | default(inventory_hostname) }}
   when: tailscale_status.rc != 0
 
 - name: Enable Tailscale service

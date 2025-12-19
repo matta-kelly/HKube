@@ -5,16 +5,16 @@ set -e
 source .env
 
 # Get Terraform output (overrides .env if available)
-TF_IP=$(cd terraform/headscale-vps && terraform output -raw ipv4_address 2>/dev/null || echo "")
+TF_IP=$(cd terraform/anchor-vps && terraform output -raw ipv4_address 2>/dev/null || echo "")
 if [ -n "$TF_IP" ]; then
-    HEADSCALE_IP="$TF_IP"
+    ANCHOR_IP="$TF_IP"
 fi
 
 # Generate inventory
 cat > ansible/inventory.yml << EOF
 all:
   vars:
-    admin_user: "${HEADSCALE_USER:-mkultra}"
+    admin_user: "${ANCHOR_USER:-mkultra}"
     ssh_public_key_file: "${SSH_PUBLIC_KEY_FILE:-~/.ssh/id_ed25519_hetzner.pub}"
     headscale_domain: "${HEADSCALE_DOMAIN}"
     headscale_authkey: "${HEADSCALE_AUTHKEY}"
@@ -26,12 +26,13 @@ all:
     sops_version: "3.9.0"
 
   children:
-    headscale:
+    anchor:
       hosts:
-        headscale-vps:
-          ansible_host: ${HEADSCALE_IP}
+        anchor:
+          ansible_host: ${ANCHOR_IP}
           ansible_user: root
           ansible_ssh_private_key_file: ${SSH_PUBLIC_KEY_FILE%.pub}
+          tailscale_hostname: "anchor"
           headscale_version: "0.23.0"
           headscale_domain: "${HEADSCALE_DOMAIN}"
           headscale_base_domain: "${HEADSCALE_BASE_DOMAIN}"

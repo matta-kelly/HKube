@@ -77,6 +77,11 @@
     src: /etc/headscale/authkey
   register: authkey_content
 
+# Set a fact so tailscale role can use it
+- name: Set authkey fact for tailscale role
+  ansible.builtin.set_fact:
+    headscale_authkey: "{{ authkey_content.content | b64decode | trim }}"
+
 - name: Display authkey
   ansible.builtin.debug:
     msg: |

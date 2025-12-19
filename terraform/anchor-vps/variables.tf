@@ -1,5 +1,5 @@
 # ==============================================================================
-# Headscale VPS - Variables
+# Anchor VPS - Variables
 # ==============================================================================
 # All values come from environment via TF_VAR_ prefix
 # Source .env before running: source ../../.env
@@ -27,7 +27,7 @@ variable "ssh_public_key" {
 variable "name" {
   description = "Server name"
   type        = string
-  default     = "headscale"
+  default     = "Anchor"
 }
 
 variable "server_type" {
