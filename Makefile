@@ -116,6 +116,11 @@ join-mesh:
 	@bash -c 'source .env && test -n "$$NODE_HOSTNAME" || (echo "NODE_HOSTNAME not set" && exit 1)'
 	@echo "Installing Tailscale..."
 	@which tailscale > /dev/null || curl -fsSL https://tailscale.com/install.sh | sh
+	@echo "Checking current state..."
+	@bash -c 'if tailscale status > /dev/null 2>&1; then \
+		echo "Already connected, logging out to re-register..."; \
+		sudo tailscale logout; \
+	fi'
 	@echo "Joining mesh..."
 	@bash -c 'source .env && sudo tailscale up --login-server https://$$HEADSCALE_DOMAIN --authkey $$HEADSCALE_AUTHKEY --hostname $$NODE_HOSTNAME'
 	@echo "Verifying..."
