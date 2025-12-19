@@ -1,7 +1,7 @@
 .
 ├── ansible
+│   ├── anchor.yaml
 │   ├── ansible.cfg
-│   ├── headscale.yaml
 │   ├── inventory.yml
 │   ├── roles
 │   │   ├── base
@@ -22,6 +22,13 @@
 │   │   │   │   └── main.yaml
 │   │   │   └── templates
 │   │   │       └── sops.yaml.j2
+│   │   ├── haproxy
+│   │   │   ├── handlers
+│   │   │   │   └── main.yaml
+│   │   │   ├── tasks
+│   │   │   │   └── main.yaml
+│   │   │   └── templates
+│   │   │       └── haproxy.cfg.j2
 │   │   ├── headscale
 │   │   │   ├── handlers
 │   │   │   │   └── main.yaml
@@ -73,25 +80,25 @@
 ├── scripts
 │   └── generate-inventory.sh
 └── terraform
-    ├── .gitignore
-    └── headscale-vps
-        ├── .gitignore
-        ├── main.tf
-        ├── outputs.tf
-        ├── .terraform
-        │   └── providers
-        │       └── registry.terraform.io
-        │           └── hetznercloud
-        │               └── hcloud
-        │                   └── 1.57.0
-        │                       └── linux_amd64
-        │                           ├── CHANGELOG.md
-        │                           ├── LICENSE
-        │                           ├── README.md
-        │                           └── terraform-provider-hcloud_v1.57.0
-        ├── .terraform.lock.hcl
-        ├── terraform.tfstate
-        ├── terraform.tfstate.backup
-        └── variables.tf
+    ├── anchor-vps
+    │   ├── .gitignore
+    │   ├── main.tf
+    │   ├── outputs.tf
+    │   ├── .terraform
+    │   │   └── providers
+    │   │       └── registry.terraform.io
+    │   │           └── hetznercloud
+    │   │               └── hcloud
+    │   │                   └── 1.57.0
+    │   │                       └── linux_amd64
+    │   │                           ├── CHANGELOG.md
+    │   │                           ├── LICENSE
+    │   │                           ├── README.md
+    │   │                           └── terraform-provider-hcloud_v1.57.0
+    │   ├── .terraform.lock.hcl
+    │   ├── terraform.tfstate
+    │   ├── terraform.tfstate.backup
+    │   └── variables.tf
+    └── .gitignore
 
-43 directories, 52 files
+47 directories, 55 files

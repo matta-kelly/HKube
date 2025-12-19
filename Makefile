@@ -104,3 +104,19 @@ anchor-ssh:
 	@bash -c 'source .env && \
 		ANCHOR_IP=$$(cd terraform/anchor-vps && terraform output -raw ipv4_address) && \
 		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} $${ANCHOR_USER:-mkultra}@$$ANCHOR_IP'
+
+
+# ------------------------------------------------------------------------------
+# Node Bootstrap (run on the node itself)
+# ------------------------------------------------------------------------------
+
+join-mesh:
+	@test -f .env || (echo "Run 'make setup' first" && exit 1)
+	@bash -c 'source .env && test -n "$$HEADSCALE_AUTHKEY" || (echo "HEADSCALE_AUTHKEY not set" && exit 1)'
+	@bash -c 'source .env && test -n "$$NODE_HOSTNAME" || (echo "NODE_HOSTNAME not set" && exit 1)'
+	@echo "Installing Tailscale..."
+	@which tailscale > /dev/null || curl -fsSL https://tailscale.com/install.sh | sh
+	@echo "Joining mesh..."
+	@bash -c 'source .env && sudo tailscale up --login-server https://$$HEADSCALE_DOMAIN --authkey $$HEADSCALE_AUTHKEY --hostname $$NODE_HOSTNAME'
+	@echo "Verifying..."
+	@tailscale status
