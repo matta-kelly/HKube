@@ -20,8 +20,25 @@
       - apt-transport-https
       - ca-certificates
       - gnupg
+      - python3-pip
       - "linux-modules-extra-{{ ansible_kernel }}"
     state: present
+
+# ------------------------------------------------------------------------------
+# Install workflow tools
+# ------------------------------------------------------------------------------
+- name: Install workflow tools
+  ansible.builtin.apt:
+    name:
+      - make
+      - direnv
+    state: present
+
+- name: Install Python kubernetes library
+  ansible.builtin.pip:
+    name: kubernetes
+    state: present
+    break_system_packages: true
 
 # ------------------------------------------------------------------------------
 # Swap - must be disabled for kubernetes
