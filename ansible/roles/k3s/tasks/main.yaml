@@ -9,6 +9,11 @@
 # ==============================================================================
 
 ---
+- name: Set facts from environment
+  ansible.builtin.set_fact:
+    node_hostname: "{{ lookup('env', 'NODE_HOSTNAME') }}"
+    headscale_base_domain: "{{ lookup('env', 'HEADSCALE_BASE_DOMAIN') }}"
+
 - name: Check if k3s is already installed
   ansible.builtin.stat:
     path: /usr/local/bin/k3s
@@ -28,13 +33,14 @@
   ansible.builtin.command:
     cmd: /tmp/k3s-install.sh
   environment:
-    INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_VERSION: "{{ k3s_version | default('v1.31.3+k3s1') }}"
     INSTALL_K3S_EXEC: >-
       server
       --flannel-backend=none
       --disable-network-policy
       --disable=traefik
       --disable=servicelb
+      --tls-san={{ node_hostname }}.{{ headscale_base_domain }}
   when: not k3s_binary.stat.exists
   changed_when: true
 
@@ -43,6 +49,24 @@
     path: /etc/rancher/k3s/k3s.yaml
     state: present
     timeout: 60
+
+# ------------------------------------------------------------------------------
+# Display K3s token
+# ------------------------------------------------------------------------------
+- name: Read K3s token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_file
+
+- name: Display K3s token
+  ansible.builtin.debug:
+    msg: |
+      
+      =============================================
+      SAVE THIS TO .env:
+      
+      K3S_TOKEN="{{ k3s_token_file.content | b64decode | trim }}"
+      =============================================
 
 # ------------------------------------------------------------------------------
 # Configure kubeconfig on server
@@ -81,7 +105,7 @@
   ansible.builtin.replace:
     path: "{{ playbook_dir }}/../kubeconfig.yaml"
     regexp: "127\\.0\\.0\\.1"
-    replace: "{{ server_ip }}"
+    replace: "{{ node_hostname }}.{{ headscale_base_domain }}"
   delegate_to: localhost
   become: false
   run_once: true
