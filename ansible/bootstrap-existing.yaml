@@ -1,0 +1,12 @@
+---
+- name: Bootstrap Existing Node
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: common
+    - role: k3s
+    - role: cilium
+    - role: flux

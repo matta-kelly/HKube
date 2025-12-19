@@ -125,3 +125,15 @@ join-mesh:
 	@bash -c 'source .env && sudo tailscale up --login-server https://$$HEADSCALE_DOMAIN --authkey $$HEADSCALE_AUTHKEY --hostname $$NODE_HOSTNAME'
 	@echo "Verifying..."
 	@tailscale status
+
+bootstrap-fresh: join-mesh
+	@echo "Installing Ansible..."
+	@which ansible-playbook > /dev/null || (sudo apt update && sudo apt install -y ansible)
+	@echo "Bootstrapping fresh node (includes base hardening)..."
+	@cd ansible && ansible-playbook bootstrap-fresh.yaml
+
+bootstrap-existing: join-mesh
+	@echo "Installing Ansible..."
+	@which ansible-playbook > /dev/null || (sudo apt update && sudo apt install -y ansible)
+	@echo "Bootstrapping existing node (skips base hardening)..."
+	@cd ansible && ansible-playbook bootstrap-existing.yaml
