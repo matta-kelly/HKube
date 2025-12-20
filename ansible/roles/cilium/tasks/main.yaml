@@ -18,10 +18,6 @@
 # ------------------------------------------------------------------------------
 # Install Cilium via Helm
 # ------------------------------------------------------------------------------
-- name: Set facts from environment
-  ansible.builtin.set_fact:
-    cilium_version: "{{ lookup('env', 'CILIUM_VERSION') | default('1.16.4', true) }}"
-
 - name: Add Cilium Helm repo
   kubernetes.core.helm_repository:
     name: cilium
@@ -39,7 +35,7 @@
   kubernetes.core.helm:
     name: cilium
     chart_ref: cilium/cilium
-    chart_version: "{{ cilium_version }}"
+    chart_version: "1.16.4"
     release_namespace: kube-system
     create_namespace: false
     values_files:
@@ -53,19 +49,10 @@
 # Verify installation
 # ------------------------------------------------------------------------------
 - name: Wait for Cilium pods
-  kubernetes.core.k8s_info:
-    api_version: v1
-    kind: Pod
-    namespace: kube-system
-    label_selectors:
-      - k8s-app=cilium
-    wait: true
-    wait_condition:
-      type: Ready
-      status: "True"
-    wait_timeout: 300
+  ansible.builtin.command: kubectl wait --for=condition=Ready pods -l k8s-app=cilium -n kube-system --timeout=300s
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: false
 
 - name: Verify node is ready
   ansible.builtin.command: kubectl get nodes

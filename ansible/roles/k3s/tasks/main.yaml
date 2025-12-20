@@ -33,7 +33,7 @@
   ansible.builtin.command:
     cmd: /tmp/k3s-install.sh
   environment:
-    INSTALL_K3S_VERSION: "{{ k3s_version | default('v1.31.3+k3s1') }}"
+    INSTALL_K3S_VERSION: "v1.31.3+k3s1"
     INSTALL_K3S_EXEC: >-
       server
       --flannel-backend=none

@@ -10,6 +10,12 @@
 # ==============================================================================
 
 ---
+- name: Set facts from environment
+  ansible.builtin.set_fact:
+    github_user: "{{ lookup('env', 'GITHUB_USER') }}"
+    github_repo: "{{ lookup('env', 'GITHUB_REPO') | default('h-kube', true) }}"
+    github_branch: "{{ lookup('env', 'GITHUB_BRANCH') | default('main', true) }}"
+
 # ------------------------------------------------------------------------------
 # Install CLI tools
 # ------------------------------------------------------------------------------
@@ -21,7 +27,7 @@
 
 - name: Install SOPS
   ansible.builtin.get_url:
-    url: "https://github.com/getsops/sops/releases/download/v{{ sops_version }}/sops-v{{ sops_version }}.linux.amd64"
+    url: "https://github.com/getsops/sops/releases/download/v3.9.0/sops-v3.9.0.linux.amd64"
     dest: /usr/local/bin/sops
     mode: "0755"
 
@@ -63,7 +69,13 @@
 
 - name: Display age public key
   ansible.builtin.debug:
-    msg: "Age public key: {{ age_public_key }}"
+    msg: |
+      
+      =============================================
+      SAVE THIS (Age public key):
+      
+      {{ age_public_key }}
+      =============================================
 
 # ------------------------------------------------------------------------------
 # Update .sops.yaml with generated key
@@ -80,15 +92,10 @@
 # Create flux-system namespace and secrets
 # ------------------------------------------------------------------------------
 - name: Create flux-system namespace
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: flux-system
+  ansible.builtin.command: kubectl create namespace flux-system --dry-run=client -o yaml | kubectl apply -f -
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  changed_when: true
 
 - name: Create SOPS age secret
   ansible.builtin.shell: |
@@ -117,7 +124,7 @@
     --owner={{ github_user }}
     --repository={{ github_repo }}
     --branch={{ github_branch }}
-    --path=clusters
+    --path=cluster
     --personal
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
@@ -131,11 +138,11 @@
       GITHUB_TOKEN not set. Run manually:
 
       export GITHUB_TOKEN=<your-token>
-      export KUBECONFIG={{ playbook_dir }}/../kubeconfig.yaml
+      export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
       flux bootstrap github \
         --owner={{ github_user }} \
         --repository={{ github_repo }} \
         --branch={{ github_branch }} \
-        --path=clusters \
+        --path=cluster \
         --personal
   when: lookup('env', 'GITHUB_TOKEN') == ''
