@@ -2,6 +2,8 @@
 ├── ansible
 │   ├── anchor.yaml
 │   ├── ansible.cfg
+│   ├── bootstrap-existing.yaml
+│   ├── bootstrap-fresh.yaml
 │   ├── inventory.yml
 │   ├── roles
 │   │   ├── base
@@ -101,4 +103,4 @@
     │   └── variables.tf
     └── .gitignore
 
-47 directories, 55 files
+47 directories, 57 files
