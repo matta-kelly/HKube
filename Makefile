@@ -130,7 +130,7 @@ bootstrap-fresh: join-mesh
 	@echo "Installing Ansible..."
 	@which ansible-playbook > /dev/null || (sudo apt update && sudo apt install -y ansible)
 	@echo "Bootstrapping fresh node (includes base hardening)..."
-	@cd ansible && ansible-playbook bootstrap-fresh.yaml
+	@bash -c 'set -a && source .env && set +a && cd ansible && ansible-playbook bootstrap-fresh.yaml'
 
 bootstrap-existing: join-mesh
 	@echo "Installing Ansible..."
