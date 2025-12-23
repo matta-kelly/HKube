@@ -92,10 +92,12 @@
 # Create flux-system namespace and secrets
 # ------------------------------------------------------------------------------
 - name: Create flux-system namespace
-  ansible.builtin.command: kubectl create namespace flux-system --dry-run=client -o yaml | kubectl apply -f -
+  ansible.builtin.command: kubectl create namespace flux-system
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-  changed_when: true
+  register: ns_result
+  failed_when: ns_result.rc != 0 and 'already exists' not in ns_result.stderr
+  changed_when: ns_result.rc == 0
 
 - name: Create SOPS age secret
   ansible.builtin.shell: |
