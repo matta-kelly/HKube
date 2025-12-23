@@ -1,0 +1,9 @@
+# ==============================================================================
+# Cluster Topology
+# ==============================================================================
+# Single source of truth for control plane nodes.
+# Workers self-register and do not need declaration here.
+# ==============================================================================
+
+control_planes:
+  - cloud-cp-1
