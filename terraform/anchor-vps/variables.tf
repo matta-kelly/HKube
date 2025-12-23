@@ -39,7 +39,7 @@ variable "server_type" {
 variable "location" {
   description = "Hetzner datacenter"
   type        = string
-  default     = "nbg1"
+  default     = "hil"
 }
 
 variable "image" {

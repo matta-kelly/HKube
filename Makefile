@@ -2,7 +2,7 @@
 # H-Kube Makefile
 # ==============================================================================
 
-.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh
+.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap-fresh bootstrap-existing
 
 help:
 	@echo "H-Kube Commands:"
@@ -16,6 +16,18 @@ help:
 	@echo "    make anchor-init        - First-time VPS config (as root)"
 	@echo "    make anchor-configure   - Re-run VPS config (as admin user)"
 	@echo "    make anchor-ssh         - SSH into Anchor VPS"
+	@echo ""
+	@echo "  Control Plane VPS:"
+	@echo "    make cp                 - Create Control Plane VPS (Terraform)"
+	@echo "    make cp-destroy         - Destroy Control Plane VPS"
+	@echo "    make cp-init            - First-time VPS config (as root)"
+	@echo "    make cp-configure       - Re-run VPS config (as admin user)"
+	@echo "    make cp-ssh             - SSH into Control Plane VPS"
+	@echo ""
+	@echo "  Node Bootstrap (run on node itself):"
+	@echo "    make join-mesh          - Join Tailscale mesh"
+	@echo "    make bootstrap-fresh    - Bootstrap fresh node"
+	@echo "    make bootstrap-existing - Bootstrap existing node"
 
 # ------------------------------------------------------------------------------
 # Initial Setup
@@ -63,11 +75,9 @@ anchor:
 	@./scripts/generate-inventory.sh
 	@echo ""
 	@echo "=========================================="
-	@echo "VPS created. Save this to .env:"
+	@echo "Anchor VPS created."
 	@echo ""
-	@bash -c 'cd terraform/anchor-vps && echo "ANCHOR_IP=$$(terraform output -raw ipv4_address)"'
-	@echo ""
-	@echo "Then run: make anchor-init"
+	@echo "Run: make anchor-init"
 	@echo "=========================================="
 
 anchor-destroy:
@@ -105,6 +115,63 @@ anchor-ssh:
 		ANCHOR_IP=$$(cd terraform/anchor-vps && terraform output -raw ipv4_address) && \
 		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} $${ANCHOR_USER:-mkultra}@$$ANCHOR_IP'
 
+# ------------------------------------------------------------------------------
+# Control Plane VPS - Terraform
+# ------------------------------------------------------------------------------
+
+cp:
+	@test -f .env || (echo "Error: .env not found. Run: make setup" && exit 1)
+	@bash -c 'source .env && test -n "$$HCLOUD_TOKEN" || (echo "HCLOUD_TOKEN not set" && exit 1)'
+	@bash -c 'source .env && test -n "$$SSH_PUBLIC_KEY_FILE" || (echo "SSH_PUBLIC_KEY_FILE not set" && exit 1)'
+	@echo "Creating Control Plane VPS..."
+	@bash -c 'source .env && \
+		export TF_VAR_hcloud_token="$$HCLOUD_TOKEN" && \
+		export TF_VAR_ssh_public_key="$$(cat $$SSH_PUBLIC_KEY_FILE)" && \
+		cd terraform/control-plane && \
+		terraform init && \
+		terraform apply'
+	@./scripts/generate-inventory.sh
+	@echo ""
+	@echo "=========================================="
+	@echo "Control Plane VPS created."
+	@echo ""
+	@echo "Run: make cp-init"
+	@echo "=========================================="
+
+cp-destroy:
+	@test -f .env || (echo "Error: .env not found" && exit 1)
+	@bash -c 'source .env && \
+		export TF_VAR_hcloud_token="$$HCLOUD_TOKEN" && \
+		export TF_VAR_ssh_public_key="$$(cat $$SSH_PUBLIC_KEY_FILE)" && \
+		cd terraform/control-plane && \
+		terraform destroy'
+
+# ------------------------------------------------------------------------------
+# Control Plane VPS - Ansible
+# ------------------------------------------------------------------------------
+
+cp-init: venv
+	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
+	@echo "Initializing Control Plane VPS..."
+	@bash -c 'source .venv/bin/activate && cd ansible && ansible-playbook control-plane.yaml'
+	@echo ""
+	@echo "=========================================="
+	@echo "Control Plane initialized."
+	@echo "=========================================="
+
+cp-configure: venv
+	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
+	@echo "Configuring Control Plane VPS..."
+	@bash -c 'source .venv/bin/activate && source .env && \
+		test -n "$$ANCHOR_USER" || (echo "ANCHOR_USER not set" && exit 1) && \
+		cd ansible && \
+		ansible-playbook control-plane.yaml -e "ansible_user=$$ANCHOR_USER"'
+
+cp-ssh:
+	@test -f .env || (echo "Error: .env not found" && exit 1)
+	@bash -c 'source .env && \
+		CP_IP=$$(cd terraform/control-plane && terraform output -raw ipv4_address) && \
+		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} root@$$CP_IP'
 
 # ------------------------------------------------------------------------------
 # Node Bootstrap (run on the node itself)
