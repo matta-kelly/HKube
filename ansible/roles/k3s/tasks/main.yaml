@@ -1,18 +1,42 @@
 # ==============================================================================
 # K3s Role - Install Kubernetes
 # ==============================================================================
-# Installs k3s with:
+# Supports two modes via k3s_role variable:
+#
+# Server mode (k3s_role: server):
 #   --flannel-backend=none     (we use cilium instead)
 #   --disable-network-policy   (cilium handles this)
 #   --disable=traefik          (we install traefik via flux)
 #   --disable=servicelb        (we use cilium's LB)
+#
+# Agent mode (k3s_role: agent):
+#   Joins existing cluster via K3S_URL and K3S_TOKEN
 # ==============================================================================
 
 ---
-- name: Set facts from environment
+- name: Validate k3s_role
+  ansible.builtin.assert:
+    that:
+      - k3s_role is defined
+      - k3s_role in ['server', 'agent']
+    fail_msg: "k3s_role must be 'server' or 'agent'"
+
+- name: Set facts from inventory or environment
   ansible.builtin.set_fact:
-    node_hostname: "{{ lookup('env', 'NODE_HOSTNAME') }}"
-    headscale_base_domain: "{{ lookup('env', 'HEADSCALE_BASE_DOMAIN') }}"
+    node_hostname: "{{ tailscale_hostname | default(lookup('env', 'NODE_HOSTNAME')) }}"
+
+- name: Set agent facts from environment
+  ansible.builtin.set_fact:
+    k3s_url: "{{ lookup('env', 'K3S_URL') | default('https://anchor.h-kube.net:6443', true) }}"
+    k3s_token: "{{ lookup('env', 'K3S_TOKEN') }}"
+  when: k3s_role == 'agent'
+
+- name: Validate agent requirements
+  ansible.builtin.assert:
+    that:
+      - k3s_token | length > 0
+    fail_msg: "K3S_TOKEN environment variable is required for agent mode"
+  when: k3s_role == 'agent'
 
 - name: Check if k3s is already installed
   ansible.builtin.stat:
@@ -41,7 +65,21 @@
       --disable=traefik
       --disable=servicelb
       --tls-san={{ node_hostname }}.{{ headscale_base_domain }}
-  when: not k3s_binary.stat.exists
+  when:
+    - k3s_role == 'server'
+    - not k3s_binary.stat.exists
+  changed_when: true
+
+- name: Install k3s agent
+  ansible.builtin.command:
+    cmd: /tmp/k3s-install.sh
+  environment:
+    INSTALL_K3S_VERSION: "v1.31.3+k3s1"
+    K3S_URL: "{{ k3s_url }}"
+    K3S_TOKEN: "{{ k3s_token }}"
+  when:
+    - k3s_role == 'agent'
+    - not k3s_binary.stat.exists
   changed_when: true
 
 - name: Wait for k3s to start
@@ -49,50 +87,69 @@
     path: /etc/rancher/k3s/k3s.yaml
     state: present
     timeout: 60
+  when: k3s_role == 'server'
+
+- name: Wait for k3s agent to start
+  ansible.builtin.wait_for:
+    path: /var/lib/rancher/k3s/agent/kubelet.kubeconfig
+    state: present
+    timeout: 60
+  when: k3s_role == 'agent'
 
 # ------------------------------------------------------------------------------
-# Display K3s token
+# Display K3s token (server only)
 # ------------------------------------------------------------------------------
 - name: Read K3s token
   ansible.builtin.slurp:
     src: /var/lib/rancher/k3s/server/node-token
   register: k3s_token_file
+  when: k3s_role == 'server'
 
 - name: Display K3s token
   ansible.builtin.debug:
     msg: |
-      
+
       =============================================
       SAVE THIS TO .env:
-      
+
       K3S_TOKEN="{{ k3s_token_file.content | b64decode | trim }}"
       =============================================
+  when: k3s_role == 'server'
 
 # ------------------------------------------------------------------------------
 # Configure kubeconfig on server
 # ------------------------------------------------------------------------------
 - name: Ensure .kube directory exists
   ansible.builtin.file:
-    path: "{{ ansible_env.HOME }}/.kube"
+    path: "/home/{{ admin_user }}/.kube"
     state: directory
     mode: "0755"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: k3s_role == 'server'
 
 - name: Copy kubeconfig to user directory
   ansible.builtin.copy:
     src: /etc/rancher/k3s/k3s.yaml
-    dest: "{{ ansible_env.HOME }}/.kube/config"
+    dest: "/home/{{ admin_user }}/.kube/config"
     remote_src: true
     mode: "0600"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: k3s_role == 'server'
 
 - name: Set KUBECONFIG in bashrc
   ansible.builtin.lineinfile:
-    path: "{{ ansible_env.HOME }}/.bashrc"
+    path: "/home/{{ admin_user }}/.bashrc"
     line: "export KUBECONFIG=$HOME/.kube/config"
     create: true
     mode: "0644"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+  when: k3s_role == 'server'
 
 # ------------------------------------------------------------------------------
-# Fetch kubeconfig to local machine
+# Fetch kubeconfig to local machine (server only)
 # ------------------------------------------------------------------------------
 - name: Fetch kubeconfig to control node
   ansible.builtin.fetch:
@@ -100,6 +157,7 @@
     dest: "{{ playbook_dir }}/../kubeconfig.yaml"
     flat: true
   run_once: true
+  when: k3s_role == 'server'
 
 - name: Update kubeconfig server address
   ansible.builtin.replace:
@@ -109,3 +167,19 @@
   delegate_to: localhost
   become: false
   run_once: true
+  when: k3s_role == 'server'
+
+# ------------------------------------------------------------------------------
+# Agent success message
+# ------------------------------------------------------------------------------
+- name: Display agent success message
+  ansible.builtin.debug:
+    msg: |
+
+      =============================================
+      K3s agent installed successfully!
+      Node {{ node_hostname }} is joining the cluster.
+
+      Check status with: kubectl get nodes
+      =============================================
+  when: k3s_role == 'agent'

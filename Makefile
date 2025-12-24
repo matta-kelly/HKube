@@ -2,7 +2,7 @@
 # H-Kube Makefile
 # ==============================================================================
 
-.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap-fresh bootstrap-existing
+.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap
 
 help:
 	@echo "H-Kube Commands:"
@@ -26,8 +26,7 @@ help:
 	@echo ""
 	@echo "  Node Bootstrap (run on node itself):"
 	@echo "    make join-mesh          - Join Tailscale mesh"
-	@echo "    make bootstrap-fresh    - Bootstrap fresh node"
-	@echo "    make bootstrap-existing - Bootstrap existing node"
+	@echo "    make bootstrap          - Bootstrap node (prompts for options)"
 
 # ------------------------------------------------------------------------------
 # Initial Setup
@@ -193,14 +192,47 @@ join-mesh:
 	@echo "Verifying..."
 	@tailscale status
 
-bootstrap-fresh: join-mesh
+bootstrap: join-mesh
 	@echo "Installing Ansible..."
 	@which ansible-playbook > /dev/null || (sudo apt update && sudo apt install -y ansible)
-	@echo "Bootstrapping fresh node (includes base hardening)..."
-	@bash -c 'set -a && source .env && set +a && cd ansible && ansible-playbook bootstrap-fresh.yaml'
-
-bootstrap-existing: join-mesh
-	@echo "Installing Ansible..."
-	@which ansible-playbook > /dev/null || (sudo apt update && sudo apt install -y ansible)
-	@echo "Bootstrapping existing node..."
-	@bash -c 'set -a && source .env && set +a && cd ansible && ansible-playbook bootstrap-existing.yaml'
+	@bash -c '\
+		while true; do \
+			read -p "Server or worker? [s/w]: " role_choice; \
+			case "$$role_choice" in \
+				[sS]) k3s_role="server"; role_display="server"; break;; \
+				[wW]) k3s_role="agent"; role_display="worker"; break;; \
+				*) echo "Invalid input. Enter s or w.";; \
+			esac; \
+		done; \
+		\
+		while true; do \
+			read -p "Fresh system (run hardening)? [y/n]: " fresh_choice; \
+			case "$$fresh_choice" in \
+				[yY]) include_base="true"; base_display="yes"; break;; \
+				[nN]) include_base="false"; base_display="no"; break;; \
+				*) echo "Invalid input. Enter y or n.";; \
+			esac; \
+		done; \
+		\
+		source .env; \
+		if [ "$$k3s_role" = "agent" ] && [ -z "$$K3S_TOKEN" ]; then \
+			echo "Error: K3S_TOKEN not set in .env (required for worker mode)" && exit 1; \
+		fi; \
+		\
+		echo ""; \
+		echo "Will bootstrap as: $$role_display"; \
+		echo "Include hardening: $$base_display"; \
+		echo ""; \
+		while true; do \
+			read -p "Continue? [y/n]: " confirm; \
+			case "$$confirm" in \
+				[yY]) break;; \
+				[nN]) echo "Aborted."; exit 0;; \
+				*) echo "Invalid input. Enter y or n.";; \
+			esac; \
+		done; \
+		\
+		echo ""; \
+		echo "Bootstrapping..."; \
+		set -a && source .env && set +a && \
+		cd ansible && ansible-playbook bootstrap.yaml -e "k3s_role=$$k3s_role include_base=$$include_base"'

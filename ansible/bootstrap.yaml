@@ -1,0 +1,45 @@
+---
+# ==============================================================================
+# Unified Bootstrap Playbook
+# ==============================================================================
+# Variables:
+#   k3s_role:     'server' or 'agent' (required)
+#   include_base: true/false - run base hardening (default: false)
+#
+# Usage:
+#   ansible-playbook bootstrap.yaml -e "k3s_role=agent include_base=true"
+# ==============================================================================
+
+- name: Bootstrap Node
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Validate required variables
+      ansible.builtin.assert:
+        that:
+          - k3s_role is defined
+          - k3s_role in ['server', 'agent']
+        fail_msg: "k3s_role must be 'server' or 'agent'"
+
+    - name: Set include_base default
+      ansible.builtin.set_fact:
+        include_base: "{{ include_base | default(false) | bool }}"
+
+  roles:
+    - role: base
+      when: include_base | bool
+
+    - role: tailscale
+
+    - role: common
+
+    - role: k3s
+
+    - role: cilium
+      when: k3s_role == 'server'
+
+    - role: flux
+      when: k3s_role == 'server'
