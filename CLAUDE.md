@@ -54,24 +54,54 @@ hosts:
   - grafana.kube.datamountainsolutions.com
 ```
 
-## Node Placement
+## Node Labels & Placement
 
-**Control plane (cloud-cp)**: Only critical control plane components
-- Flux controllers
-- CoreDNS
-- CNPG databases (for now)
+**Never hardcode hostnames** in nodeSelector. Use labels instead:
 
-**Worker node (gpa-server)**: All application workloads
-- Authentik
-- Grafana
-- Prometheus
-- Alertmanager
-- User applications
+### Standard Labels (applied during bootstrap)
 
-Use `nodeSelector` to place workloads:
+| Label | Values | Meaning |
+|-------|--------|---------|
+| `node.h-kube.io/role` | `server`, `agent` | Control plane vs worker |
+| `storage.h-kube.io/nvme` | `true` | Node has NVMe storage |
+| `storage.h-kube.io/bulk` | `true` | Node has bulk HDD storage |
+
+### Usage in Manifests
+
 ```yaml
+# Correct - uses labels (works on any node with bulk storage)
+nodeSelector:
+  storage.h-kube.io/bulk: "true"
+
+# Wrong - hardcoded hostname
 nodeSelector:
   kubernetes.io/hostname: gpa-server
+```
+
+### Placement Guidelines
+
+**Control plane (`node.h-kube.io/role: server`):**
+- Flux controllers
+- CoreDNS
+- Lightweight metadata services (SeaweedFS master/filer)
+
+**Workers with bulk storage (`storage.h-kube.io/bulk: "true"`):**
+- SeaweedFS volumes
+- Application data
+
+**Workers with NVMe (`storage.h-kube.io/nvme: "true"`):**
+- Databases
+- Caches
+- Performance-sensitive workloads
+
+### View Cluster State
+
+```bash
+# Generate cluster-config.yaml from live cluster
+make cluster-status
+
+# View node labels directly
+ssh cloud-cp "sudo kubectl get nodes --show-labels"
 ```
 
 ## GitOps Workflow
@@ -86,6 +116,16 @@ nodeSelector:
 ssh cloud-cp "sudo kubectl annotate --overwrite -n flux-system kustomization/flux-system reconcile.fluxcd.io/requestedAt=\"\$(date +%s)\""
 ```
 
+## Storage
+
+**local-path-provisioner** is configured per node in `cluster/infrastructure/configs/local-path/`:
+- `gpa-server`: `/mnt/bulk-storage/k3s` (1TB HDD)
+- Default: `/var/lib/rancher/k3s/storage` (NVMe/SSD)
+
+**SeaweedFS** provides distributed storage:
+- S3-compatible API for object storage
+- CSI driver for PVCs (future)
+
 ## Directory Structure
 
 ```
@@ -95,7 +135,7 @@ cluster/
 ├── flux-system/               # Flux bootstrap (don't modify gotk-components.yaml)
 └── infrastructure/
     ├── controllers/           # Operators (cert-manager, traefik, cnpg)
-    ├── configs/               # CRD-dependent configs (ClusterIssuers, middlewares)
+    ├── configs/               # CRD-dependent configs (ClusterIssuers, middlewares, local-path)
     └── services/              # Applications (authentik, prometheus, seaweedfs)
 ```
 

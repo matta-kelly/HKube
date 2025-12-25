@@ -35,6 +35,45 @@
     k3s_version: "{{ lookup('env', 'K3S_VERSION') | default('v1.31.3+k3s1', true) }}"
     tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
 
+# ------------------------------------------------------------------------------
+# Hardware Detection - Detect storage and apply labels
+# ------------------------------------------------------------------------------
+- name: Detect NVMe storage
+  ansible.builtin.shell: lsblk -d -o NAME,TYPE | grep -q nvme
+  register: has_nvme
+  failed_when: false
+  changed_when: false
+
+- name: Detect bulk storage mount
+  ansible.builtin.stat:
+    path: /mnt/bulk-storage
+  register: bulk_storage_mount
+
+- name: Get bulk storage size
+  ansible.builtin.shell: df -BG /mnt/bulk-storage | tail -1 | awk '{print $2}' | tr -d 'G'
+  register: bulk_storage_size
+  when: bulk_storage_mount.stat.exists
+  changed_when: false
+
+- name: Build node labels
+  ansible.builtin.set_fact:
+    node_labels: >-
+      --node-label=node.h-kube.io/role={{ k3s_role }}
+      {% if has_nvme.rc == 0 %}--node-label=storage.h-kube.io/nvme=true{% endif %}
+      {% if bulk_storage_mount.stat.exists %}--node-label=storage.h-kube.io/bulk=true{% endif %}
+
+- name: Display detected hardware
+  ansible.builtin.debug:
+    msg: |
+      Hardware detected:
+        - NVMe: {{ 'yes' if has_nvme.rc == 0 else 'no' }}
+        - Bulk storage (/mnt/bulk-storage): {{ 'yes (' + bulk_storage_size.stdout + 'GB)' if bulk_storage_mount.stat.exists else 'no' }}
+
+      Labels to apply:
+        - node.h-kube.io/role={{ k3s_role }}
+        {% if has_nvme.rc == 0 %}- storage.h-kube.io/nvme=true{% endif %}
+        {% if bulk_storage_mount.stat.exists %}- storage.h-kube.io/bulk=true{% endif %}
+
 - name: Set agent facts from environment
   ansible.builtin.set_fact:
     k3s_url: "{{ lookup('env', 'K3S_URL') }}"
@@ -78,6 +117,7 @@
       --disable=traefik
       --tls-san=api.{{ kube_domain }}
       --tls-san={{ tailscale_ip }}
+      {{ node_labels }}
   when:
     - k3s_role == 'server'
     - not k3s_binary.stat.exists
@@ -88,7 +128,7 @@
     cmd: /tmp/k3s-install.sh
   environment:
     INSTALL_K3S_VERSION: "{{ k3s_version }}"
-    INSTALL_K3S_EXEC: "agent --node-ip={{ tailscale_ip }} --flannel-iface=tailscale0"
+    INSTALL_K3S_EXEC: "agent --node-ip={{ tailscale_ip }} --flannel-iface=tailscale0 {{ node_labels }}"
     K3S_URL: "{{ k3s_url }}"
     K3S_TOKEN: "{{ k3s_token }}"
   when:
@@ -207,6 +247,21 @@
   when: k3s_role == 'server'
 
 # ------------------------------------------------------------------------------
+# Apply labels to existing nodes (idempotent)
+# ------------------------------------------------------------------------------
+- name: Apply storage labels to node (server)
+  ansible.builtin.shell: |
+    kubectl label node {{ node_hostname }} node.h-kube.io/role={{ k3s_role }} --overwrite
+    {% if has_nvme.rc == 0 %}
+    kubectl label node {{ node_hostname }} storage.h-kube.io/nvme=true --overwrite
+    {% endif %}
+    {% if bulk_storage_mount.stat.exists %}
+    kubectl label node {{ node_hostname }} storage.h-kube.io/bulk=true --overwrite
+    {% endif %}
+  when: k3s_role == 'server'
+  changed_when: true
+
+# ------------------------------------------------------------------------------
 # Agent success message
 # ------------------------------------------------------------------------------
 - name: Display agent success message
@@ -217,6 +272,11 @@
       K3s agent installed successfully!
       Node {{ node_hostname }} is joining the cluster.
 
-      Check status with: kubectl get nodes
+      Labels applied:
+        - node.h-kube.io/role=agent
+        {% if has_nvme.rc == 0 %}- storage.h-kube.io/nvme=true{% endif %}
+        {% if bulk_storage_mount.stat.exists %}- storage.h-kube.io/bulk=true{% endif %}
+
+      Check status with: kubectl get nodes --show-labels
       =============================================
   when: k3s_role == 'agent'

@@ -2,13 +2,16 @@
 # H-Kube Makefile
 # ==============================================================================
 
-.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap
+.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap cluster-status
 
 help:
 	@echo "H-Kube Commands:"
 	@echo ""
 	@echo "  Setup:"
 	@echo "    make setup              - Initial setup (creates .env)"
+	@echo ""
+	@echo "  Cluster Status:"
+	@echo "    make cluster-status     - Generate cluster-config.yaml from live cluster"
 	@echo ""
 	@echo "  Anchor VPS:"
 	@echo "    make anchor             - Create Anchor VPS (Terraform)"
@@ -27,6 +30,13 @@ help:
 	@echo "  Node Bootstrap (run on node itself):"
 	@echo "    make join-mesh          - Join Tailscale mesh"
 	@echo "    make bootstrap          - Bootstrap node (prompts for options)"
+
+# ------------------------------------------------------------------------------
+# Cluster Status
+# ------------------------------------------------------------------------------
+
+cluster-status:
+	@./scripts/generate-cluster-config.sh
 
 # ------------------------------------------------------------------------------
 # Initial Setup

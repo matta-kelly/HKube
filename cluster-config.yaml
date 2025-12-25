@@ -1,9 +1,37 @@
 # ==============================================================================
-# Cluster Topology
+# Cluster Configuration (Auto-Generated)
 # ==============================================================================
-# Single source of truth for control plane nodes.
-# Workers self-register and do not need declaration here.
+# This file is generated from the live cluster state.
+# Run: ./scripts/generate-cluster-config.sh
+#
+# NOTE: This is documentation, not source of truth.
+#       Node labels in Kubernetes are authoritative.
 # ==============================================================================
 
-control_planes:
-  - cloud-cp-1
+nodes:
+  cloud-cp-1:
+    role: server
+    tailscale_ip: 100.64.0.5
+    kubernetes_version: v1.31.3+k3s1
+    os: Ubuntu 24.04.3 LTS
+    arch: amd64
+    resources:
+      cpu: 3
+      memory: 3911236Ki
+    storage:
+      nvme: false
+      bulk: false
+
+  gpa-server:
+    role: agent
+    tailscale_ip: 100.64.0.3
+    kubernetes_version: v1.31.3+k3s1
+    os: Ubuntu 24.04.3 LTS
+    arch: amd64
+    resources:
+      cpu: 12
+      memory: 11966740Ki
+    storage:
+      nvme: true
+      bulk: true
+

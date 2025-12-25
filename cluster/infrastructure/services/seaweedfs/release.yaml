@@ -2,7 +2,7 @@
 # SeaweedFS Helm Release
 # ==============================================================================
 # Distributed object storage with S3 API
-# Master: cloud-cp-1 (metadata), Volume: gpa-server (bulk storage)
+# Uses node labels for placement (no hardcoded hostnames)
 # ==============================================================================
 
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -12,6 +12,7 @@ metadata:
   namespace: seaweedfs
 spec:
   interval: 30m
+  timeout: 10m
   chart:
     spec:
       chart: seaweedfs
@@ -20,49 +21,54 @@ spec:
         kind: HelmRepository
         name: seaweedfs
         namespace: flux-system
+
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+
   values:
     # -------------------------------------------------------------------------
-    # Master - manages topology, lightweight
+    # Master - manages topology (lightweight, runs on control plane)
     # -------------------------------------------------------------------------
     master:
       enabled: true
       replicas: 1
-      nodeSelector: |
-        kubernetes.io/hostname: cloud-cp-1
+      nodeSelector:
+        node.h-kube.io/role: server
       data:
         type: persistentVolumeClaim
         size: 1Gi
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # Volume - stores actual data
+    # Volume - stores actual data (runs on nodes with bulk storage)
     # -------------------------------------------------------------------------
     volume:
       enabled: true
       replicas: 1
-      nodeSelector: |
-        kubernetes.io/hostname: gpa-server
+      nodeSelector:
+        storage.h-kube.io/bulk: "true"
       data:
         type: persistentVolumeClaim
         size: 100Gi
         storageClass: local-path
-      # Rack/datacenter awareness for future expansion
       rack: home
       dataCenter: default
 
     # -------------------------------------------------------------------------
-    # Filer - S3 API endpoint
+    # Filer - S3 API endpoint (runs on control plane, lightweight)
     # -------------------------------------------------------------------------
     filer:
       enabled: true
       replicas: 1
-      nodeSelector: |
-        kubernetes.io/hostname: cloud-cp-1
+      nodeSelector:
+        node.h-kube.io/role: server
       s3:
         enabled: true
         port: 8333
-        # Allow anonymous access for internal cluster use
-        # TODO: Add auth for production
         allowEmptyFolder: true
       data:
         type: persistentVolumeClaim
@@ -70,13 +76,15 @@ spec:
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # S3 Gateway (exposed via filer)
+    # S3 Gateway
     # -------------------------------------------------------------------------
     s3:
       enabled: true
+      nodeSelector:
+        node.h-kube.io/role: server
 
     # -------------------------------------------------------------------------
-    # Disable components we don't need
+    # Disable unused components
     # -------------------------------------------------------------------------
     cronjob:
       enabled: false
