@@ -41,9 +41,7 @@ spec:
           enabled: true
           name: Authentik
           allow_sign_up: true
-          # Credentials loaded from environment (via envFromSecret)
-          client_id: $__env{GF_AUTH_GENERIC_OAUTH_CLIENT_ID}
-          client_secret: $__env{GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET}
+          # client_id and client_secret auto-loaded from GF_AUTH_GENERIC_OAUTH_* env vars
           scopes: openid profile email
           auth_url: https://auth.${CLUSTER_DOMAIN}/application/o/authorize/
           token_url: https://auth.${CLUSTER_DOMAIN}/application/o/token/
