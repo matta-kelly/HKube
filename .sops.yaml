@@ -1,0 +1,16 @@
+# ==============================================================================
+# SOPS Configuration
+# ==============================================================================
+# Encrypts secrets using age. Flux decrypts them in-cluster.
+#
+# Usage:
+#   Encrypt: sops -e -i secret.yaml
+#   Decrypt: sops -d secret.yaml
+#   Edit:    sops secret.yaml
+# ==============================================================================
+
+creation_rules:
+  # Encrypt only the 'data' and 'stringData' fields in Kubernetes Secrets
+  - path_regex: .*\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    age: age165ul5vra7q09yse7k0nharmt2jp0usw5tj2qwv2an9glyvxrr5ss5snxgj

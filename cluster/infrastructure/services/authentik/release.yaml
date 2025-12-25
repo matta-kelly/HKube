@@ -103,19 +103,4 @@ spec:
 
   # Note: Secrets are injected via global.env instead of valuesFrom
   # This ensures they're passed directly as environment variables
-
----
-# ==============================================================================
-# Authentik Secret Key
-# ==============================================================================
-# Generate with: openssl rand -base64 32
-# TODO: Use SOPS to encrypt this
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: authentik-secrets
-  namespace: authentik
-type: Opaque
-stringData:
-  secret_key: "KIZZyLOM4x+Lu+leXb4lQpl/3ifchWbhInKyZbo1fvQ="
+  # Secret key is in secrets.yaml (SOPS encrypted)
