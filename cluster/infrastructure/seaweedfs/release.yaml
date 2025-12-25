@@ -1,0 +1,84 @@
+# ==============================================================================
+# SeaweedFS Helm Release
+# ==============================================================================
+# Distributed object storage with S3 API
+# Master: cloud-cp-1 (metadata), Volume: gpa-server (bulk storage)
+# ==============================================================================
+
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: seaweedfs
+  namespace: seaweedfs
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: seaweedfs
+      version: "3.x"
+      sourceRef:
+        kind: HelmRepository
+        name: seaweedfs
+        namespace: flux-system
+  values:
+    # -------------------------------------------------------------------------
+    # Master - manages topology, lightweight
+    # -------------------------------------------------------------------------
+    master:
+      enabled: true
+      replicas: 1
+      nodeSelector:
+        kubernetes.io/hostname: cloud-cp-1
+      data:
+        type: persistentVolumeClaim
+        size: 1Gi
+        storageClass: local-path
+
+    # -------------------------------------------------------------------------
+    # Volume - stores actual data
+    # -------------------------------------------------------------------------
+    volume:
+      enabled: true
+      replicas: 1
+      nodeSelector:
+        kubernetes.io/hostname: gpa-server
+      data:
+        type: persistentVolumeClaim
+        size: 100Gi
+        storageClass: local-path
+      # Rack/datacenter awareness for future expansion
+      rack: home
+      dataCenter: default
+
+    # -------------------------------------------------------------------------
+    # Filer - S3 API endpoint
+    # -------------------------------------------------------------------------
+    filer:
+      enabled: true
+      replicas: 1
+      nodeSelector:
+        kubernetes.io/hostname: cloud-cp-1
+      s3:
+        enabled: true
+        port: 8333
+        # Allow anonymous access for internal cluster use
+        # TODO: Add auth for production
+        allowEmptyFolder: true
+      data:
+        type: persistentVolumeClaim
+        size: 2Gi
+        storageClass: local-path
+
+    # -------------------------------------------------------------------------
+    # S3 Gateway (exposed via filer)
+    # -------------------------------------------------------------------------
+    s3:
+      enabled: true
+
+    # -------------------------------------------------------------------------
+    # Disable components we don't need
+    # -------------------------------------------------------------------------
+    cronjob:
+      enabled: false
+    cosi:
+      enabled: false
