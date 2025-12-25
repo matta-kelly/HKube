@@ -87,11 +87,11 @@ spec:
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
         hosts:
-          - auth.kube.datamountainsolutions.com
+          - auth.${CLUSTER_DOMAIN}
         tls:
           - secretName: authentik-tls
             hosts:
-              - auth.kube.datamountainsolutions.com
+              - auth.${CLUSTER_DOMAIN}
 
     # -------------------------------------------------------------------------
     # Worker - run on worker node (gpa-server)

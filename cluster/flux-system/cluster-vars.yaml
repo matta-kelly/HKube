@@ -1,0 +1,21 @@
+# ==============================================================================
+# Cluster Variables
+# ==============================================================================
+# Central config for Flux variable substitution.
+# Use ${VAR_NAME} in any YAML file to reference these.
+# ==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-vars
+  namespace: flux-system
+data:
+  # Base domain
+  DOMAIN: datamountainsolutions.com
+
+  # Cluster subdomain (services live here)
+  CLUSTER_DOMAIN: kube.datamountainsolutions.com
+
+  # Admin email (for Let's Encrypt, etc.)
+  ADMIN_EMAIL: admin@datamountainsolutions.com
