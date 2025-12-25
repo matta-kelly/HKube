@@ -6,15 +6,13 @@
 # ==============================================================================
 
 ---
-- name: Get Tailscale IP for API server endpoint
-  ansible.builtin.command: tailscale ip -4
-  register: tailscale_ip_result
-  changed_when: false
-
+# For hybrid clusters, Cilium needs to reach the API server from all nodes.
+# We use the node's public IP (which is in the k3s TLS certificate SANs).
+# The ansible_host variable contains the public IP from inventory.
 - name: Set facts from environment
   ansible.builtin.set_fact:
     cilium_version: "{{ lookup('env', 'CILIUM_VERSION') | default('1.16.4', true) }}"
-    k8s_api_host: "{{ tailscale_ip_result.stdout | trim }}"
+    k8s_api_host: "{{ ansible_host }}"
 
 # ------------------------------------------------------------------------------
 # Install Helm (required for cilium installation)
