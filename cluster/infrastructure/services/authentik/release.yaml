@@ -53,7 +53,7 @@ spec:
       image:
         registry: docker.io
         repository: bitnami/redis
-        tag: 7.4-debian-12
+        tag: latest
 
     # -------------------------------------------------------------------------
     # Server
