@@ -77,6 +77,7 @@
       --disable=traefik
       --disable=servicelb
       --tls-san={{ node_hostname }}.{{ headscale_base_domain }}
+      --tls-san={{ tailscale_ip }}
   when:
     - k3s_role == 'server'
     - not k3s_binary.stat.exists
