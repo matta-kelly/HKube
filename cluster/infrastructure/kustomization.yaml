@@ -10,4 +10,5 @@ resources:
   - cert-manager
   - traefik
   - cloudnative-pg
+  - kube-prometheus-stack
   # - seaweedfs   # TODO: Enable when ready
