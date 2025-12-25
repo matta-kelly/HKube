@@ -84,6 +84,23 @@ spec:
         node.h-kube.io/role: server
 
     # -------------------------------------------------------------------------
+    # CSI Driver - enables PVC support
+    # -------------------------------------------------------------------------
+    csi:
+      enabled: true
+      # Storage class for dynamic provisioning
+      storageClass:
+        name: seaweedfs
+        defaultClass: false  # Don't make it the default, keep local-path
+      # Controller runs on control plane
+      controller:
+        nodeSelector: |
+          node.h-kube.io/role: server
+      # Node plugin runs on all nodes (DaemonSet)
+      node:
+        nodeSelector: {}  # Run everywhere
+
+    # -------------------------------------------------------------------------
     # Disable unused components
     # -------------------------------------------------------------------------
     cronjob:
