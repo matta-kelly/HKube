@@ -34,7 +34,7 @@ cat >> ansible/inventory.yml << EOF
       hosts:
         anchor:
           ansible_host: ${ANCHOR_IP}
-          ansible_user: root
+          ansible_user: ${ANCHOR_USER:-mkultra}
           ansible_ssh_private_key_file: ${SSH_PUBLIC_KEY_FILE%.pub}
           tailscale_hostname: "anchor"
           headscale_version: "0.23.0"
@@ -54,7 +54,7 @@ cat >> ansible/inventory.yml << EOF
       hosts:
         cloud-cp-1:
           ansible_host: ${CP_IP}
-          ansible_user: root
+          ansible_user: ${ANCHOR_USER:-mkultra}
           ansible_ssh_private_key_file: ${SSH_PUBLIC_KEY_FILE%.pub}
           tailscale_hostname: "cloud-cp-1"
           firewall_allow_ports:

@@ -6,6 +6,10 @@
 # ==============================================================================
 
 ---
+- name: Set facts from environment
+  ansible.builtin.set_fact:
+    cilium_version: "{{ lookup('env', 'CILIUM_VERSION') | default('1.16.4', true) }}"
+
 # ------------------------------------------------------------------------------
 # Install Helm (required for cilium installation)
 # ------------------------------------------------------------------------------
@@ -35,7 +39,7 @@
   kubernetes.core.helm:
     name: cilium
     chart_ref: cilium/cilium
-    chart_version: "1.16.4"
+    chart_version: "{{ cilium_version }}"
     release_namespace: kube-system
     create_namespace: false
     values_files:

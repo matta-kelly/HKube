@@ -93,8 +93,8 @@ anchor-destroy:
 
 anchor-init: venv
 	@test -f ansible/inventory.yml || (echo "Run 'make anchor' first" && exit 1)
-	@echo "Initializing Anchor VPS..."
-	@bash -c 'source .venv/bin/activate && cd ansible && ansible-playbook anchor.yaml'
+	@echo "Initializing Anchor VPS (first run as root)..."
+	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook anchor.yaml -u root'
 	@echo ""
 	@echo "=========================================="
 	@echo "Done! Save the HEADSCALE_AUTHKEY to .env"
@@ -103,10 +103,7 @@ anchor-init: venv
 anchor-configure: venv
 	@test -f ansible/inventory.yml || (echo "Run 'make anchor' first" && exit 1)
 	@echo "Configuring Anchor VPS..."
-	@bash -c 'source .venv/bin/activate && source .env && \
-		test -n "$$ANCHOR_USER" || (echo "ANCHOR_USER not set" && exit 1) && \
-		cd ansible && \
-		ansible-playbook anchor.yaml -e "ansible_user=$$ANCHOR_USER"'
+	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook anchor.yaml'
 
 anchor-ssh:
 	@test -f .env || (echo "Error: .env not found" && exit 1)
@@ -151,8 +148,8 @@ cp-destroy:
 
 cp-init: venv
 	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
-	@echo "Initializing Control Plane VPS..."
-	@bash -c 'source .venv/bin/activate && cd ansible && ansible-playbook control-plane.yaml'
+	@echo "Initializing Control Plane VPS (first run as root)..."
+	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook control-plane.yaml -u root'
 	@echo ""
 	@echo "=========================================="
 	@echo "Control Plane initialized."
@@ -161,10 +158,7 @@ cp-init: venv
 cp-configure: venv
 	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
 	@echo "Configuring Control Plane VPS..."
-	@bash -c 'source .venv/bin/activate && source .env && \
-		test -n "$$ANCHOR_USER" || (echo "ANCHOR_USER not set" && exit 1) && \
-		cd ansible && \
-		ansible-playbook control-plane.yaml -e "ansible_user=$$ANCHOR_USER"'
+	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook control-plane.yaml'
 
 cp-ssh:
 	@test -f .env || (echo "Error: .env not found" && exit 1)
@@ -215,8 +209,13 @@ bootstrap: join-mesh
 		done; \
 		\
 		source .env; \
-		if [ "$$k3s_role" = "agent" ] && [ -z "$$K3S_TOKEN" ]; then \
-			echo "Error: K3S_TOKEN not set in .env (required for worker mode)" && exit 1; \
+		if [ "$$k3s_role" = "agent" ]; then \
+			if [ -z "$$K3S_TOKEN" ]; then \
+				echo "Error: K3S_TOKEN not set in .env (required for worker mode)" && exit 1; \
+			fi; \
+			if [ -z "$$K3S_URL" ]; then \
+				echo "Error: K3S_URL not set in .env (required for worker mode)" && exit 1; \
+			fi; \
 		fi; \
 		\
 		echo ""; \

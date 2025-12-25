@@ -24,18 +24,20 @@
 - name: Set facts from inventory or environment
   ansible.builtin.set_fact:
     node_hostname: "{{ tailscale_hostname | default(lookup('env', 'NODE_HOSTNAME')) }}"
+    k3s_version: "{{ lookup('env', 'K3S_VERSION') | default('v1.31.3+k3s1', true) }}"
 
 - name: Set agent facts from environment
   ansible.builtin.set_fact:
-    k3s_url: "{{ lookup('env', 'K3S_URL') | default('https://anchor.h-kube.net:6443', true) }}"
+    k3s_url: "{{ lookup('env', 'K3S_URL') }}"
     k3s_token: "{{ lookup('env', 'K3S_TOKEN') }}"
   when: k3s_role == 'agent'
 
 - name: Validate agent requirements
   ansible.builtin.assert:
     that:
+      - k3s_url | length > 0
       - k3s_token | length > 0
-    fail_msg: "K3S_TOKEN environment variable is required for agent mode"
+    fail_msg: "K3S_URL and K3S_TOKEN environment variables are required for agent mode"
   when: k3s_role == 'agent'
 
 - name: Check if k3s is already installed
@@ -57,7 +59,7 @@
   ansible.builtin.command:
     cmd: /tmp/k3s-install.sh
   environment:
-    INSTALL_K3S_VERSION: "v1.31.3+k3s1"
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
     INSTALL_K3S_EXEC: >-
       server
       --flannel-backend=none
@@ -74,7 +76,7 @@
   ansible.builtin.command:
     cmd: /tmp/k3s-install.sh
   environment:
-    INSTALL_K3S_VERSION: "v1.31.3+k3s1"
+    INSTALL_K3S_VERSION: "{{ k3s_version }}"
     K3S_URL: "{{ k3s_url }}"
     K3S_TOKEN: "{{ k3s_token }}"
   when:
