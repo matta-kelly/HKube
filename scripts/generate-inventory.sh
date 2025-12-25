@@ -14,8 +14,10 @@ all:
   vars:
     admin_user: "${ANCHOR_USER:-mkultra}"
     ssh_public_key_file: "${SSH_PUBLIC_KEY_FILE}"
-    headscale_domain: "${HEADSCALE_DOMAIN}"
-    headscale_base_domain: "${HEADSCALE_BASE_DOMAIN}"
+    domain: "${DOMAIN}"
+    mesh_domain: "${MESH_DOMAIN:-mesh.${DOMAIN}}"
+    headscale_domain: "headscale.${DOMAIN}"
+    kube_domain: "kube.${DOMAIN}"
     headscale_authkey: "${HEADSCALE_AUTHKEY}"
     github_user: "${GITHUB_USER}"
     github_repo: "${GITHUB_REPO:-h-kube}"
@@ -37,8 +39,6 @@ cat >> ansible/inventory.yml << EOF
           ansible_ssh_private_key_file: ${SSH_PUBLIC_KEY_FILE%.pub}
           tailscale_hostname: "anchor"
           headscale_version: "0.23.0"
-          headscale_domain: "${HEADSCALE_DOMAIN}"
-          headscale_base_domain: "${HEADSCALE_BASE_DOMAIN}"
           firewall_allow_ports:
             - { port: "80", proto: "tcp" }
             - { port: "443", proto: "tcp" }

@@ -1,0 +1,24 @@
+# ==============================================================================
+# Infrastructure Services - Flux Kustomization
+# ==============================================================================
+# Services that may use CRDs from controllers (authentik, prometheus, etc.)
+# Waits for controllers to be healthy before deploying
+# ==============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infrastructure-services
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./cluster/infrastructure/services
+  prune: true
+  wait: true
+  dependsOn:
+    - name: infrastructure-controllers

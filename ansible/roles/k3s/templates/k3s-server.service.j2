@@ -31,5 +31,5 @@ ExecStart=/usr/local/bin/k3s \
     '--flannel-iface=tailscale0' \
     '--flannel-external-ip' \
     '--disable=traefik' \
-    '--tls-san={{ node_hostname }}.{{ headscale_base_domain }}' \
+    '--tls-san=api.{{ kube_domain }}' \
     '--tls-san={{ tailscale_ip }}'

@@ -1,0 +1,11 @@
+# ==============================================================================
+# Infrastructure Services
+# ==============================================================================
+# These may depend on CRDs from controllers (e.g., authentik needs cnpg)
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - authentik
+  - kube-prometheus-stack
+  - seaweedfs

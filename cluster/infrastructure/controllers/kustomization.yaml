@@ -1,11 +1,11 @@
 # ==============================================================================
-# cert-manager Kustomization
+# Infrastructure Controllers (Base Operators)
 # ==============================================================================
+# These install first - they provide CRDs for other components
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
-  - repository.yaml
-  - release.yaml
-  # - clusterissuer.yaml  # TODO: Enable after cert-manager CRDs exist
+  - cert-manager
+  - cloudnative-pg
+  - traefik

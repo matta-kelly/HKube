@@ -149,7 +149,7 @@ cp-destroy:
 cp-init: venv
 	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
 	@echo "Initializing Control Plane VPS (first run as root)..."
-	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook control-plane.yaml -u root'
+	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook control-plane.yaml -e ansible_user=root'
 	@echo ""
 	@echo "=========================================="
 	@echo "Control Plane initialized."

@@ -76,7 +76,7 @@
       --flannel-iface=tailscale0
       --flannel-external-ip
       --disable=traefik
-      --tls-san={{ node_hostname }}.{{ headscale_base_domain }}
+      --tls-san=api.{{ kube_domain }}
       --tls-san={{ tailscale_ip }}
   when:
     - k3s_role == 'server'
@@ -200,7 +200,7 @@
   ansible.builtin.replace:
     path: "{{ playbook_dir }}/../kubeconfig.yaml"
     regexp: "127\\.0\\.0\\.1"
-    replace: "{{ node_hostname }}.{{ headscale_base_domain }}"
+    replace: "api.{{ kube_domain }}"
   delegate_to: localhost
   become: false
   run_once: true

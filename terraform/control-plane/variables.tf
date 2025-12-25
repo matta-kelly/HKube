@@ -22,13 +22,13 @@ variable "name" {
 variable "server_type" {
   description = "Hetzner server type"
   type        = string
-  default     = "cx22"
+  default     = "cpx21"
 }
 
 variable "location" {
   description = "Hetzner datacenter"
   type        = string
-  default     = "hil"
+  default     = "ash"
 }
 
 variable "image" {

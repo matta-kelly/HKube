@@ -1,15 +1,15 @@
 # ==============================================================================
-# Infrastructure Components
+# Infrastructure - Flux Kustomizations
 # ==============================================================================
-# Core services that apps depend on
+# Deploys infrastructure in stages using Flux dependsOn:
+#   1. controllers  - Base operators (cert-manager, cloudnative-pg, traefik)
+#   2. configs      - CRD-dependent configs (ClusterIssuers) - depends on controllers
+#   3. services     - Apps (authentik, prometheus, seaweedfs) - depends on controllers
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cert-manager
-  - traefik
-  - cloudnative-pg
-  - kube-prometheus-stack
-  - seaweedfs
-  - authentik
+  - controllers.yaml
+  - configs.yaml
+  - services.yaml

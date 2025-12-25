@@ -1,0 +1,31 @@
+# ==============================================================================
+# Infrastructure Controllers - Flux Kustomization
+# ==============================================================================
+# Base operators that provide CRDs (cert-manager, cloudnative-pg, traefik)
+# Deploys first, no dependencies
+# ==============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: infrastructure-controllers
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  path: ./cluster/infrastructure/controllers
+  prune: true
+  wait: true
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cert-manager
+      namespace: cert-manager
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: cnpg-controller-manager
+      namespace: cnpg-system
