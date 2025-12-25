@@ -1,0 +1,27 @@
+# ==============================================================================
+# Authentik ForwardAuth Middleware for Traefik
+# ==============================================================================
+# This middleware protects services by forwarding auth requests to Authentik.
+# Uses the embedded outpost - no separate container needed.
+#
+# Usage: Add this annotation to any Ingress:
+#   traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
+# ==============================================================================
+
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authentik-auth
+  namespace: kube-system
+spec:
+  forwardAuth:
+    # Authentik embedded outpost endpoint
+    address: http://authentik-server.authentik.svc.cluster.local/outpost.goauthentik.io/auth/traefik
+    trustForwardHeader: true
+    # Headers passed to backend services after successful auth
+    authResponseHeaders:
+      - X-authentik-username
+      - X-authentik-groups
+      - X-authentik-email
+      - X-authentik-name
+      - X-authentik-uid

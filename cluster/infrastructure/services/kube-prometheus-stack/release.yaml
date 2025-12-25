@@ -20,10 +20,34 @@ spec:
         name: prometheus-community
         namespace: flux-system
   values:
+    # -------------------------------------------------------------------------
     # Grafana config
+    # -------------------------------------------------------------------------
     grafana:
       enabled: true
-      adminPassword: admin  # TODO: Change or use secret
+
+      # Inject OAuth credentials from secret
+      envFromSecret: grafana-oauth-secret
+
+      # Grafana configuration
+      grafana.ini:
+        server:
+          root_url: https://grafana.kube.datamountainsolutions.com
+        auth:
+          disable_login_form: true  # OAuth only, no password login
+        auth.generic_oauth:
+          enabled: true
+          name: Authentik
+          allow_sign_up: true
+          client_id: ${GF_AUTH_GENERIC_OAUTH_CLIENT_ID}
+          client_secret: ${GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET}
+          scopes: openid profile email
+          auth_url: https://auth.kube.datamountainsolutions.com/application/o/authorize/
+          token_url: https://auth.kube.datamountainsolutions.com/application/o/token/
+          api_url: https://auth.kube.datamountainsolutions.com/application/o/userinfo/
+          # Map Authentik groups to Grafana roles
+          role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || 'Viewer'
+
       ingress:
         enabled: true
         ingressClassName: traefik

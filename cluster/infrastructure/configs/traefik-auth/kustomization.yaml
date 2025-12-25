@@ -1,11 +1,8 @@
 # ==============================================================================
-# kube-prometheus-stack Kustomization
+# Traefik Auth Middleware Kustomization
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
-  - repository.yaml
-  - oauth-secret.yaml
-  - release.yaml
+  - middleware.yaml
