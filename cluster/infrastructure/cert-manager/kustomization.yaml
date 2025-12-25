@@ -1,13 +1,11 @@
 # ==============================================================================
-# Infrastructure Components
-# ==============================================================================
-# Core services that apps depend on
+# cert-manager Kustomization
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cert-manager
-  - traefik
-  - cloudnative-pg
-  # - seaweedfs   # TODO: Enable when ready
+  - namespace.yaml
+  - repository.yaml
+  - release.yaml
+  - clusterissuer.yaml
