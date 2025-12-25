@@ -4,16 +4,16 @@
 # Supports two modes via k3s_role variable:
 #
 # Server mode (k3s_role: server):
-#   --flannel-backend=none     (we use cilium instead)
-#   --disable-network-policy   (cilium handles this)
-#   --disable=traefik          (we install traefik via flux)
-#   --disable=servicelb        (we use cilium's LB)
+#   --flannel-backend=vxlan      (VXLAN overlay network)
+#   --flannel-iface=tailscale0   (use Tailscale interface for VXLAN tunneling)
+#   --flannel-external-ip        (advertise external IPs)
+#   --disable=traefik            (we install traefik via flux)
 #
 # Agent mode (k3s_role: agent):
 #   Joins existing cluster via K3S_URL and K3S_TOKEN
 #
-# For hybrid clusters, nodes use their Tailscale IP (--node-ip) so they
-# communicate over the mesh network.
+# For hybrid clusters, nodes use their Tailscale IP (--node-ip) so pod traffic
+# routes through the Tailscale mesh network.
 # ==============================================================================
 
 ---
@@ -72,10 +72,10 @@
     INSTALL_K3S_EXEC: >-
       server
       --node-ip={{ tailscale_ip }}
-      --flannel-backend=none
-      --disable-network-policy
+      --flannel-backend=vxlan
+      --flannel-iface=tailscale0
+      --flannel-external-ip
       --disable=traefik
-      --disable=servicelb
       --tls-san={{ node_hostname }}.{{ headscale_base_domain }}
       --tls-san={{ tailscale_ip }}
   when:
@@ -88,13 +88,36 @@
     cmd: /tmp/k3s-install.sh
   environment:
     INSTALL_K3S_VERSION: "{{ k3s_version }}"
-    INSTALL_K3S_EXEC: "agent --node-ip={{ tailscale_ip }}"
+    INSTALL_K3S_EXEC: "agent --node-ip={{ tailscale_ip }} --flannel-iface=tailscale0"
     K3S_URL: "{{ k3s_url }}"
     K3S_TOKEN: "{{ k3s_token }}"
   when:
     - k3s_role == 'agent'
     - not k3s_binary.stat.exists
   changed_when: true
+
+# ------------------------------------------------------------------------------
+# Reconfigure existing k3s (updates systemd service if config changed)
+# ------------------------------------------------------------------------------
+- name: Update k3s server service config
+  ansible.builtin.template:
+    src: k3s-server.service.j2
+    dest: /etc/systemd/system/k3s.service
+    mode: "0644"
+  when:
+    - k3s_role == 'server'
+    - k3s_binary.stat.exists
+  notify: Restart k3s server
+
+- name: Update k3s agent service config
+  ansible.builtin.template:
+    src: k3s-agent.service.j2
+    dest: /etc/systemd/system/k3s-agent.service
+    mode: "0644"
+  when:
+    - k3s_role == 'agent'
+    - k3s_binary.stat.exists
+  notify: Restart k3s agent
 
 - name: Wait for k3s to start
   ansible.builtin.wait_for:

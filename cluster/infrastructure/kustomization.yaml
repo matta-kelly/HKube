@@ -9,6 +9,5 @@ kind: Kustomization
 resources:
   - traefik
   - cloudnative-pg
-  # - cilium      # Installed via Ansible, not Flux
   # - headscale   # TODO: Enable when ready
   # - seaweedfs   # TODO: Enable when ready

@@ -1,79 +1,118 @@
 # H-Kube
 
-Hybrid Kubernetes infrastructure with Headscale mesh networking.
+Hybrid Kubernetes cluster with Headscale mesh networking. Run a k3s cluster across cloud VPS and home servers, connected via Tailscale.
 
 ---
 
-## What's Built
+## Architecture
 
-**Headscale VPS (Hetzner)**
-- Mesh networking control plane
-- Nodes connect from anywhere via Tailscale
-- Let's Encrypt HTTPS auto-configured
+```
+                    Internet
+                        │
+                ┌───────┴───────┐
+                │  Anchor VPS   │
+                │  (Headscale)  │
+                └───────┬───────┘
+                        │ Tailscale Mesh
+        ┌───────────────┼───────────────┐
+        │               │               │
+┌───────┴───────┐ ┌─────┴─────┐ ┌───────┴───────┐
+│ Cloud CP VPS  │ │ Home      │ │ Future        │
+│ (k3s server)  │ │ Server    │ │ Workers       │
+│               │ │ (k3s agent)│ │               │
+└───────────────┘ └───────────┘ └───────────────┘
+```
 
-**Base security hardening**
-- Admin user with SSH key auth
-- Root login disabled
-- fail2ban, ufw, unattended-upgrades
+**Key Components:**
+- **Anchor VPS:** Headscale coordination server (mesh networking control plane)
+- **Cloud Control Plane:** k3s server in Hetzner cloud (push model via Ansible)
+- **Workers:** Home servers running k3s agent (pull model via `make bootstrap`)
+- **CNI:** Flannel with VXLAN over Tailscale (`--flannel-iface=tailscale0`)
+- **GitOps:** Flux CD syncing from this repo
 
 ---
 
 ## Prerequisites
 
-**Local machine**
+**Local machine:**
 - Python 3 + pip
 - Terraform: [install guide](https://developer.hashicorp.com/terraform/downloads)
 - Tailscale: [install guide](https://tailscale.com/download)
 
-**Hetzner Cloud**
+**Hetzner Cloud:**
 - Account at [console.hetzner.cloud](https://console.hetzner.cloud)
 - API token with read/write access
 
-**Domain**
-- A record pointing to Headscale VPS IP
+**GitHub:**
+- Personal access token for Flux bootstrap
+
+**Domain:**
+- A record for Headscale (e.g., `headscale.yourdomain.com`)
+- Wildcard or A record for mesh (e.g., `*.h-kube.net`)
 
 ---
 
 ## Quick Start
+
+### 1. Initial Setup
 ```bash
-# 1. Clone and setup
 git clone git@github.com:matta-kelly/HKube.git
 cd HKube
 make setup
+# Edit .env with your values
+```
 
-# 2. Edit .env with your values
+### 2. Deploy Anchor (Headscale)
+```bash
+make anchor              # Create VPS
+make anchor-init         # Configure (save HEADSCALE_AUTHKEY to .env)
+```
 
-# 3. Create Headscale VPS
-make headscale
-# → Save HEADSCALE_IP to .env
-# → Update DNS A record
+### 3. Deploy Cloud Control Plane
+```bash
+make cp                  # Create VPS
+make cp-init             # Configure k3s server + Flux
+# Save K3S_TOKEN and K3S_URL to .env
+```
 
-# 4. Configure VPS
-make headscale-init
-# → Save HEADSCALE_AUTHKEY to .env
+### 4. Add Worker Nodes (on each worker)
+```bash
+# SSH into the worker, clone repo, configure .env with:
+#   - HEADSCALE_AUTHKEY
+#   - K3S_TOKEN
+#   - K3S_URL
+#   - NODE_HOSTNAME
 
-# 5. Connect your laptop
-sudo tailscale up --login-server https://your.domain.com --authkey <KEY>
-
-# 6. Verify
-tailscale status
+make bootstrap           # Prompts for server/worker, runs ansible locally
 ```
 
 ---
 
 ## Commands
+
 ```bash
 make help                 # Show all commands
 
 # Setup
 make setup                # Create .env from template
 
-# Headscale VPS
-make headscale            # Create VPS (Terraform)
-make headscale-init       # First-time config (as root)
-make headscale-configure  # Re-configure (as admin user)
-make headscale-ssh        # SSH into VPS
-make headscale-destroy    # Destroy VPS
+# Anchor VPS (Headscale)
+make anchor               # Create VPS (Terraform)
+make anchor-init          # First-time config (as root)
+make anchor-configure     # Re-configure (as admin user)
+make anchor-ssh           # SSH into VPS
+make anchor-destroy       # Destroy VPS
+
+# Control Plane VPS
+make cp                   # Create VPS (Terraform)
+make cp-init              # First-time config (as root)
+make cp-configure         # Re-configure (as admin user)
+make cp-ssh               # SSH into VPS
+make cp-destroy           # Destroy VPS
+
+# Node Bootstrap (run ON the node itself)
+make join-mesh            # Join Tailscale mesh
+make bootstrap            # Full node setup (prompts for server/worker)
 ```
 
 ---
@@ -81,6 +120,7 @@ make headscale-destroy    # Destroy VPS
 ## Environment Variables
 
 Create `.env` from `.env.example`:
+
 ```bash
 # Hetzner Cloud
 HCLOUD_TOKEN=""                    # From Hetzner console
@@ -88,95 +128,113 @@ HCLOUD_TOKEN=""                    # From Hetzner console
 # SSH
 SSH_PUBLIC_KEY_FILE=""             # Path to your public key
 
-# Headscale VPS
-HEADSCALE_USER=""                  # Admin username you choose
-HEADSCALE_DOMAIN=""                # e.g. headscale.yourdomain.com
-HEADSCALE_BASE_DOMAIN=""           # e.g. mesh.yourdomain.com
-HEADSCALE_IP=""                    # Set after 'make headscale'
-HEADSCALE_AUTHKEY=""               # Set after 'make headscale-init'
+# Admin
+ANCHOR_USER=""                     # Admin username (e.g., mkultra)
 
-# GitHub (for future Flux GitOps)
+# Headscale
+HEADSCALE_DOMAIN=""                # e.g., headscale.yourdomain.com
+HEADSCALE_BASE_DOMAIN=""           # e.g., h-kube.net
+HEADSCALE_AUTHKEY=""               # From 'make anchor-init'
+
+# K3s (for workers)
+K3S_TOKEN=""                       # From 'make cp-init'
+K3S_URL=""                         # e.g., https://cloud-cp-1.h-kube.net:6443
+NODE_HOSTNAME=""                   # Tailscale hostname for this node
+
+# GitHub (for Flux)
 GITHUB_USER=""
 GITHUB_TOKEN=""
-GITHUB_REPO="h-kube"
+GITHUB_REPO="HKube"
 GITHUB_BRANCH="main"
 ```
 
 ---
 
-## Structure
+## Project Structure
+
 ```
 h-kube/
 ├── .env                           # Your config (gitignored)
 ├── .env.example                   # Template
-├── .gitignore
-├── Makefile
-├── README.md
+├── Makefile                       # All commands
+├── cluster-config.yaml            # Cluster topology
 ├── ansible/
-│   ├── ansible.cfg
 │   ├── inventory.yml              # Generated by script
-│   ├── headscale.yaml             # Headscale playbook
+│   ├── anchor.yaml                # Anchor/Headscale playbook
+│   ├── control-plane.yaml         # Control plane playbook
+│   ├── bootstrap.yaml             # Worker self-bootstrap playbook
 │   └── roles/
 │       ├── base/                  # Security hardening
-│       │   ├── tasks/main.yaml
-│       │   └── handlers/main.yaml
-│       └── headscale/             # Headscale install
-│           ├── tasks/main.yaml
-│           ├── handlers/main.yaml
-│           └── templates/config.yaml.j2
+│       ├── headscale/             # Headscale server
+│       ├── tailscale/             # Tailscale client
+│       ├── common/                # K8s prerequisites
+│       ├── k3s/                   # K3s install + config
+│       └── flux/                  # Flux CD + SOPS
+├── cluster/                       # GitOps manifests (Flux syncs this)
+│   ├── flux-system/               # Flux components
+│   └── infrastructure/            # Cluster infrastructure
 ├── scripts/
-│   └── generate-inventory.sh      # Builds inventory from .env + Terraform
+│   └── generate-inventory.sh
 └── terraform/
-    └── headscale-vps/
-        ├── main.tf
-        ├── variables.tf
-        └── outputs.tf
+    ├── anchor-vps/
+    └── control-plane/
 ```
 
 ---
 
-## Adding Devices to Mesh
+## Networking
 
-**Laptop/Desktop:**
-```bash
-sudo tailscale up --login-server https://headscale.yourdomain.com --authkey <KEY>
+The cluster uses Flannel CNI with VXLAN tunneling over the Tailscale interface:
+
+```
+--flannel-backend=vxlan
+--flannel-iface=tailscale0
+--flannel-external-ip
+--node-ip=<tailscale-ip>
 ```
 
-**Phone (iOS/Android):**
-1. Install Tailscale app
-2. Settings → Use custom coordination server
-3. Enter: `https://headscale.yourdomain.com`
-4. On your laptop, register the device:
-```bash
-ssh headscale
-sudo headscale nodes register --user h-kube --key nodekey:xxxxx
-```
-
-**Verify all nodes:**
-```bash
-ssh headscale
-sudo headscale nodes list
-```
+This allows pods on different nodes (cloud + home) to communicate over the encrypted Tailscale mesh.
 
 ---
 
-## Next Steps
+## Adding Apps
 
-- [ ] Connect home server to mesh
-- [ ] Bootstrap K3s cluster
-- [ ] Install Cilium CNI
-- [ ] Deploy Flux GitOps
-- [ ] Add apps (Vaultwarden, Immich, etc.)
+Apps are deployed via Flux GitOps. Add manifests to `cluster/` and push:
+
+```
+cluster/
+├── infrastructure/           # Core services (traefik, postgres, etc.)
+│   ├── kustomization.yaml
+│   ├── traefik/
+│   └── cloudnative-pg/
+└── apps/                     # User applications
+    ├── kustomization.yaml
+    └── your-app/
+```
+
+Flux will automatically sync changes from the repo.
 
 ---
 
 ## Disaster Recovery
+
+**Anchor VPS gone?**
 ```bash
-# Headscale VPS gone? Rebuild from scratch:
-make headscale
-# Update DNS
-make headscale-init
-# Reconnect all devices with new authkey
+make anchor && make anchor-init
+# Update DNS, reconnect all devices with new authkey
 ```
 
-All infrastructure is code. Nothing to backup except `.env` values (keep in password manager).
+**Control Plane gone?**
+```bash
+make cp && make cp-init
+# Workers will reconnect automatically
+```
+
+**Worker gone?**
+```bash
+# On new machine: clone repo, configure .env
+make bootstrap
+# Node joins cluster automatically
+```
+
+All infrastructure is code. Backup only `.env` values (keep in password manager).

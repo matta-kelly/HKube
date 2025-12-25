@@ -126,6 +126,15 @@
   changed_when: false
   failed_when: flux_check.rc != 0
 
+- name: Clean up stale Flux CRDs (fixes version mismatch errors)
+  ansible.builtin.shell: |
+    kubectl delete crd --selector=app.kubernetes.io/part-of=flux --ignore-not-found=true
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: crd_cleanup
+  changed_when: "'deleted' in crd_cleanup.stdout"
+  when: lookup('env', 'GITHUB_TOKEN') != ''
+
 - name: Bootstrap Flux
   ansible.builtin.command: >
     flux bootstrap github
@@ -134,6 +143,7 @@
     --branch={{ github_branch }}
     --path=cluster
     --personal
+    --force
   environment:
     KUBECONFIG: /etc/rancher/k3s/k3s.yaml
     GITHUB_TOKEN: "{{ lookup('env', 'GITHUB_TOKEN') }}"
@@ -152,5 +162,6 @@
         --repository={{ github_repo }} \
         --branch={{ github_branch }} \
         --path=cluster \
-        --personal
+        --personal \
+        --force
   when: lookup('env', 'GITHUB_TOKEN') == ''

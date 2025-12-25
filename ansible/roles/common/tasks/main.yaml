@@ -1,7 +1,7 @@
 # ==============================================================================
 # Common Role - System Preparation
 # ==============================================================================
-# Prepares Ubuntu for k3s + cilium:
+# Prepares Ubuntu for k3s + flannel:
 #   - Installs required packages
 #   - Disables swap
 #   - Configures kernel modules and sysctl

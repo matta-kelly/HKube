@@ -1,0 +1,35 @@
+[Unit]
+Description=Lightweight Kubernetes
+Documentation=https://k3s.io
+Wants=network-online.target
+After=network-online.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=notify
+EnvironmentFile=-/etc/default/%N
+EnvironmentFile=-/etc/sysconfig/%N
+EnvironmentFile=-/etc/systemd/system/k3s.service.env
+KillMode=process
+Delegate=yes
+User=root
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+TimeoutStartSec=0
+Restart=always
+RestartSec=5s
+ExecStartPre=-/sbin/modprobe br_netfilter
+ExecStartPre=-/sbin/modprobe overlay
+ExecStart=/usr/local/bin/k3s \
+    server \
+    '--node-ip={{ tailscale_ip }}' \
+    '--flannel-backend=vxlan' \
+    '--flannel-iface=tailscale0' \
+    '--flannel-external-ip' \
+    '--disable=traefik' \
+    '--tls-san={{ node_hostname }}.{{ headscale_base_domain }}' \
+    '--tls-san={{ tailscale_ip }}'

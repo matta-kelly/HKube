@@ -24,5 +24,4 @@
     - role: k3s
       vars:
         k3s_role: server
-    - role: cilium
     - role: flux

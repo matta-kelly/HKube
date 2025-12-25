@@ -1,7 +1,7 @@
 # ==============================================================================
 # h-kube Bootstrap Playbook
 # ==============================================================================
-# Installs: k3s + cilium + flux + sops/age
+# Installs: k3s + flannel + flux + sops/age
 #
 # Usage:
 #   export SERVER_IP="192.168.1.100"
@@ -33,6 +33,5 @@
     - role: tailscale
     - role: common
     - role: k3s
-    - role: cilium
     - role: flux
 

@@ -21,7 +21,6 @@ all:
     github_repo: "${GITHUB_REPO:-h-kube}"
     github_branch: "${GITHUB_BRANCH:-main}"
     k3s_version: "v1.31.3+k3s1"
-    cilium_version: "1.16.4"
     sops_version: "3.9.0"
 
   children:

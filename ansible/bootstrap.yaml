@@ -38,8 +38,5 @@
 
     - role: k3s
 
-    - role: cilium
-      when: k3s_role == 'server'
-
     - role: flux
       when: k3s_role == 'server'
