@@ -6,9 +6,15 @@
 # ==============================================================================
 
 ---
+- name: Get Tailscale IP for API server endpoint
+  ansible.builtin.command: tailscale ip -4
+  register: tailscale_ip_result
+  changed_when: false
+
 - name: Set facts from environment
   ansible.builtin.set_fact:
     cilium_version: "{{ lookup('env', 'CILIUM_VERSION') | default('1.16.4', true) }}"
+    k8s_api_host: "{{ tailscale_ip_result.stdout | trim }}"
 
 # ------------------------------------------------------------------------------
 # Install Helm (required for cilium installation)

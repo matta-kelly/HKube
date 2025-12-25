@@ -1,7 +1,7 @@
 # ==============================================================================
 # Cilium Helm Values
 # ==============================================================================
-# Configuration for cilium on k3s single-node
+# Configuration for cilium on k3s hybrid cluster
 # ==============================================================================
 
 # Match k3s default pod CIDR
@@ -10,7 +10,7 @@ ipam:
     clusterPoolIPv4PodCIDRList:
       - "10.42.0.0/16"
 
-# Single replica for single-node cluster
+# Single replica for single-node control plane
 operator:
   replicas: 1
 
@@ -22,6 +22,7 @@ hubble:
     enabled: false
 
 # Replace kube-proxy with eBPF
+# Use control plane's Tailscale IP so workers can reach the API server
 kubeProxyReplacement: "true"
-k8sServiceHost: "127.0.0.1"
+k8sServiceHost: "{{ k8s_api_host }}"
 k8sServicePort: "6443"
