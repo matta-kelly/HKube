@@ -28,9 +28,19 @@ spec:
       websecure:
         hostPort: 443
 
+    # Disable LoadBalancer (using hostPort instead)
+    service:
+      type: ClusterIP
+
     # Run on control plane (has public IP)
     nodeSelector:
       node-role.kubernetes.io/control-plane: "true"
+
+    # Allow scheduling on control plane
+    tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
 
     ingressRoute:
       dashboard:
