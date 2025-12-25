@@ -14,7 +14,7 @@ spec:
   chart:
     spec:
       chart: authentik
-      version: "2024.x"
+      version: "2025.x"
       sourceRef:
         kind: HelmRepository
         name: authentik
@@ -46,14 +46,10 @@ spec:
       enabled: false  # Don't deploy bundled postgres
 
     # -------------------------------------------------------------------------
-    # Redis (embedded)
+    # Redis - NOT NEEDED in 2025.x (removed in 2025.10)
     # -------------------------------------------------------------------------
     redis:
-      enabled: true
-      image:
-        registry: docker.io
-        repository: bitnami/redis
-        tag: latest
+      enabled: false
 
     # -------------------------------------------------------------------------
     # Server
