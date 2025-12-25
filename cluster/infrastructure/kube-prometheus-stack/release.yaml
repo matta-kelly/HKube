@@ -30,11 +30,11 @@ spec:
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
         hosts:
-          - grafana.h-kube.net
+          - grafana.kube.datamountainsolutions.com
         tls:
           - secretName: grafana-tls
             hosts:
-              - grafana.h-kube.net
+              - grafana.kube.datamountainsolutions.com
 
     # Prometheus config
     prometheus:

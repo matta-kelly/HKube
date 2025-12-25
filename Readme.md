@@ -48,7 +48,7 @@ Hybrid Kubernetes cluster with Headscale mesh networking. Run a k3s cluster acro
 
 **Domain:**
 - A record for Headscale (e.g., `headscale.yourdomain.com`)
-- Wildcard or A record for mesh (e.g., `*.h-kube.net`)
+- Wildcard A record for cluster services (e.g., `*.kube.datamountainsolutions.com`)
 
 ---
 
@@ -133,12 +133,12 @@ ANCHOR_USER=""                     # Admin username (e.g., mkultra)
 
 # Headscale
 HEADSCALE_DOMAIN=""                # e.g., headscale.yourdomain.com
-HEADSCALE_BASE_DOMAIN=""           # e.g., h-kube.net
+HEADSCALE_BASE_DOMAIN=""           # Tailscale magic DNS suffix (e.g., mesh.yourdomain.com)
 HEADSCALE_AUTHKEY=""               # From 'make anchor-init'
 
 # K3s (for workers)
 K3S_TOKEN=""                       # From 'make cp-init'
-K3S_URL=""                         # e.g., https://cloud-cp-1.h-kube.net:6443
+K3S_URL=""                         # e.g., https://cloud-cp-1.mesh.yourdomain.com:6443
 NODE_HOSTNAME=""                   # Tailscale hostname for this node
 
 # GitHub (for Flux)
