@@ -9,4 +9,5 @@ resources:
   - repository.yaml
   - database.yaml
   - secrets.yaml
+  - backup-secret.yaml
   - release.yaml

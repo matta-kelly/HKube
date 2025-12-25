@@ -76,11 +76,11 @@ spec:
       enabled: false
 
     # -------------------------------------------------------------------------
-    # Server - run on worker node (gpa-server)
+    # Server - run on nodes with bulk storage
     # -------------------------------------------------------------------------
     server:
       nodeSelector:
-        kubernetes.io/hostname: gpa-server
+        storage.h-kube.io/bulk: "true"
       ingress:
         enabled: true
         ingressClassName: traefik
@@ -94,12 +94,12 @@ spec:
               - auth.${CLUSTER_DOMAIN}
 
     # -------------------------------------------------------------------------
-    # Worker - run on worker node (gpa-server)
+    # Worker - run on nodes with bulk storage
     # -------------------------------------------------------------------------
     worker:
       replicas: 1
       nodeSelector:
-        kubernetes.io/hostname: gpa-server
+        storage.h-kube.io/bulk: "true"
 
   # Note: Secrets are injected via global.env instead of valuesFrom
   # This ensures they're passed directly as environment variables

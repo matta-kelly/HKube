@@ -41,23 +41,6 @@ spec:
 
 ---
 # ==============================================================================
-# S3 Backup Credentials
-# ==============================================================================
-# SeaweedFS with default/empty credentials for internal cluster use
-# TODO: Configure proper auth in production
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: authentik-db-backup-creds
-  namespace: authentik
-type: Opaque
-stringData:
-  ACCESS_KEY_ID: "any"
-  SECRET_ACCESS_KEY: "any"
-
----
-# ==============================================================================
 # Scheduled Backup
 # ==============================================================================
 

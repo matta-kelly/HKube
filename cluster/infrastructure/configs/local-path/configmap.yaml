@@ -1,9 +1,13 @@
 # ==============================================================================
 # Local Path Provisioner Configuration
 # ==============================================================================
-# Configures storage paths per node based on hardware:
-#   - gpa-server: Uses HDD at /mnt/bulk-storage for bulk data
-#   - Default: Uses /var/lib/rancher/k3s/storage (fast NVMe/SSD)
+# NOTE: This ConfigMap requires explicit node names (local-path-provisioner
+# doesn't support label selectors). Node names come from cluster discovery.
+# Regenerate with: make cluster-status
+#
+# Storage paths per node based on hardware labels:
+#   - Nodes with storage.h-kube.io/bulk=true: /mnt/bulk-storage/k3s
+#   - Default: /var/lib/rancher/k3s/storage (SSD/NVMe)
 # ==============================================================================
 
 apiVersion: v1
