@@ -8,4 +8,4 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
-  - clusterissuer.yaml
+  # - clusterissuer.yaml  # Enable after cert-manager CRDs are installed
