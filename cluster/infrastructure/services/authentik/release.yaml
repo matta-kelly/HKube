@@ -25,6 +25,16 @@ spec:
     - name: cloudnative-pg
       namespace: cnpg-system
 
+  # Allow Flux to recover from failed installs
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    cleanupOnFail: true
+
   values:
     # -------------------------------------------------------------------------
     # Authentik Config
