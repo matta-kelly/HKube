@@ -27,7 +27,7 @@ spec:
     master:
       enabled: true
       replicas: 1
-      nodeSelector:
+      nodeSelector: |
         kubernetes.io/hostname: cloud-cp-1
       data:
         type: persistentVolumeClaim
@@ -40,7 +40,7 @@ spec:
     volume:
       enabled: true
       replicas: 1
-      nodeSelector:
+      nodeSelector: |
         kubernetes.io/hostname: gpa-server
       data:
         type: persistentVolumeClaim
@@ -56,7 +56,7 @@ spec:
     filer:
       enabled: true
       replicas: 1
-      nodeSelector:
+      nodeSelector: |
         kubernetes.io/hostname: cloud-cp-1
       s3:
         enabled: true
