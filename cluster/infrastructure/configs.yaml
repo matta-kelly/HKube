@@ -22,3 +22,7 @@ spec:
   wait: true
   dependsOn:
     - name: infrastructure-controllers
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
