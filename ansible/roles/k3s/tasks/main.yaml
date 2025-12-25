@@ -11,6 +11,9 @@
 #
 # Agent mode (k3s_role: agent):
 #   Joins existing cluster via K3S_URL and K3S_TOKEN
+#
+# For hybrid clusters, nodes use their Tailscale IP (--node-ip) so they
+# communicate over the mesh network.
 # ==============================================================================
 
 ---
@@ -21,10 +24,16 @@
       - k3s_role in ['server', 'agent']
     fail_msg: "k3s_role must be 'server' or 'agent'"
 
+- name: Get Tailscale IP for hybrid cluster networking
+  ansible.builtin.command: tailscale ip -4
+  register: tailscale_ip_result
+  changed_when: false
+
 - name: Set facts from inventory or environment
   ansible.builtin.set_fact:
     node_hostname: "{{ tailscale_hostname | default(lookup('env', 'NODE_HOSTNAME')) }}"
     k3s_version: "{{ lookup('env', 'K3S_VERSION') | default('v1.31.3+k3s1', true) }}"
+    tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
 
 - name: Set agent facts from environment
   ansible.builtin.set_fact:
@@ -62,6 +71,7 @@
     INSTALL_K3S_VERSION: "{{ k3s_version }}"
     INSTALL_K3S_EXEC: >-
       server
+      --node-ip={{ tailscale_ip }}
       --flannel-backend=none
       --disable-network-policy
       --disable=traefik
@@ -77,6 +87,7 @@
     cmd: /tmp/k3s-install.sh
   environment:
     INSTALL_K3S_VERSION: "{{ k3s_version }}"
+    INSTALL_K3S_EXEC: "agent --node-ip={{ tailscale_ip }}"
     K3S_URL: "{{ k3s_url }}"
     K3S_TOKEN: "{{ k3s_token }}"
   when:
