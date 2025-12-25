@@ -8,3 +8,5 @@ resources:
   - namespace.yaml
   - repository.yaml
   - release.yaml
+  - csi-repository.yaml
+  - csi-release.yaml

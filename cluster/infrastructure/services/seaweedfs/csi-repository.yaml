@@ -1,0 +1,12 @@
+# ==============================================================================
+# SeaweedFS CSI Driver Helm Repository
+# ==============================================================================
+
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: seaweedfs-csi
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://seaweedfs.github.io/seaweedfs-csi-driver/helm

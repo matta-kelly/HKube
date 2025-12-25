@@ -84,18 +84,9 @@ spec:
         node.h-kube.io/role: server
 
     # -------------------------------------------------------------------------
-    # CSI Driver - enables PVC support
-    # -------------------------------------------------------------------------
-    csi:
-      enabled: true
-      # Storage class for dynamic provisioning
-      storageClass:
-        name: seaweedfs
-        defaultClass: false  # Don't make it the default, keep local-path
-
-    # -------------------------------------------------------------------------
     # Disable unused components
     # -------------------------------------------------------------------------
+    # Note: CSI driver is deployed separately via csi-release.yaml
     cronjob:
       enabled: false
     cosi:
