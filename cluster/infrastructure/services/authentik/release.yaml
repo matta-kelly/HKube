@@ -76,9 +76,11 @@ spec:
       enabled: false
 
     # -------------------------------------------------------------------------
-    # Server
+    # Server - run on worker node (gpa-server)
     # -------------------------------------------------------------------------
     server:
+      nodeSelector:
+        kubernetes.io/hostname: gpa-server
       ingress:
         enabled: true
         ingressClassName: traefik
@@ -92,10 +94,12 @@ spec:
               - auth.kube.datamountainsolutions.com
 
     # -------------------------------------------------------------------------
-    # Worker
+    # Worker - run on worker node (gpa-server)
     # -------------------------------------------------------------------------
     worker:
       replicas: 1
+      nodeSelector:
+        kubernetes.io/hostname: gpa-server
 
   # Note: Secrets are injected via global.env instead of valuesFrom
   # This ensures they're passed directly as environment variables

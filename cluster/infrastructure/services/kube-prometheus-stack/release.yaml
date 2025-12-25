@@ -21,10 +21,12 @@ spec:
         namespace: flux-system
   values:
     # -------------------------------------------------------------------------
-    # Grafana config
+    # Grafana config - run on worker node (gpa-server)
     # -------------------------------------------------------------------------
     grafana:
       enabled: true
+      nodeSelector:
+        kubernetes.io/hostname: gpa-server
 
       # Inject OAuth credentials from secret
       envFromSecret: grafana-oauth-secret
@@ -60,9 +62,11 @@ spec:
             hosts:
               - grafana.kube.datamountainsolutions.com
 
-    # Prometheus config
+    # Prometheus config - run on worker node (gpa-server)
     prometheus:
       prometheusSpec:
+        nodeSelector:
+          kubernetes.io/hostname: gpa-server
         retention: 7d
         storageSpec:
           volumeClaimTemplate:
@@ -72,9 +76,11 @@ spec:
                 requests:
                   storage: 10Gi
 
-    # Alertmanager config
+    # Alertmanager config - run on worker node (gpa-server)
     alertmanager:
       alertmanagerSpec:
+        nodeSelector:
+          kubernetes.io/hostname: gpa-server
         storage:
           volumeClaimTemplate:
             spec:
