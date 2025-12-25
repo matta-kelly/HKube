@@ -12,3 +12,4 @@ resources:
   - cloudnative-pg
   - kube-prometheus-stack
   - seaweedfs
+  - authentik
