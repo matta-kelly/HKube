@@ -40,7 +40,7 @@ spec:
     # Storage class settings
     storageClass:
       name: seaweedfs
-      defaultClass: false  # Keep local-path as default
+      defaultClass: true  # SeaweedFS is the default storage class
 
     # CSI controller - lightweight, can run on control plane
     controller:
