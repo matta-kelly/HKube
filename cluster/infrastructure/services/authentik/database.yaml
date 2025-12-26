@@ -23,12 +23,11 @@ spec:
     size: 5Gi
     storageClass: local-path
 
-  # Database bootstrap
+  # Database bootstrap - restore from backup
   bootstrap:
-    initdb:
-      database: authentik
-      owner: authentik
-      # Password comes from secret below
+    recovery:
+      backup:
+        name: authentik-db-backup-20251226220000
 
   # Backup to SeaweedFS S3
   backup:
