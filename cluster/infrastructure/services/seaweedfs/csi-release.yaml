@@ -37,10 +37,8 @@ spec:
     # Filer address (internal cluster service)
     seaweedfsFiler: seaweedfs-filer.seaweedfs.svc.cluster.local:8888
 
-    # Storage class settings
-    storageClass:
-      name: seaweedfs
-      defaultClass: true  # SeaweedFS is the default storage class
+    # Storage class settings (chart uses flat keys, not nested)
+    isDefaultStorageClass: true
 
     # CSI controller - lightweight, can run on control plane
     controller:
