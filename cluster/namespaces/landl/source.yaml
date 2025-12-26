@@ -1,0 +1,19 @@
+# ==============================================================================
+# Plane-PM GitRepository
+# ==============================================================================
+# Source for Plane project management - Flux watches this repo for changes
+# ==============================================================================
+
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: plane-pm
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/matta-kelly/plane-pm
+  ref:
+    branch: main
+  # Uncomment if repo is private:
+  # secretRef:
+  #   name: plane-pm-git-auth

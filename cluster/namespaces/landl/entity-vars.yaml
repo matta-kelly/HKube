@@ -1,0 +1,14 @@
+# ==============================================================================
+# Entity Variables for Landl
+# ==============================================================================
+# These variables are substituted into the plane-pm templates
+# ==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landl-entity-vars
+  namespace: flux-system
+data:
+  ENTITY_NAME: "landl"
+  ENTITY_DOMAIN: "landl.${DOMAIN}"

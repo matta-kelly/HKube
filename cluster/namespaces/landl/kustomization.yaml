@@ -1,0 +1,12 @@
+# ==============================================================================
+# Landl Namespace Kustomization
+# ==============================================================================
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - source.yaml
+  - entity-vars.yaml
+  - plane-secrets.yaml
+  - landl.yaml

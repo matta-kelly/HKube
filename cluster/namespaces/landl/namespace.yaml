@@ -1,6 +1,6 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: lotus-lake
+  name: landl
   labels:
-    name: lotus-lake
+    name: landl

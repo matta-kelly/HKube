@@ -1,0 +1,35 @@
+# ==============================================================================
+# Landl Flux Kustomization
+# ==============================================================================
+# Deploys applications from the plane-pm repo into the landl namespace
+# Depends on infrastructure-services (CNPG, Traefik, SeaweedFS, etc.)
+# ==============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: landl
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: plane-pm
+  path: ./
+  prune: true
+  wait: true
+  targetNamespace: landl
+  dependsOn:
+    - name: infrastructure-services
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
+      - kind: ConfigMap
+        name: landl-entity-vars
