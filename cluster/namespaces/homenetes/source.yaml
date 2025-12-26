@@ -1,0 +1,19 @@
+# ==============================================================================
+# Homenetes GitRepository
+# ==============================================================================
+# Source for homelab applications - Flux watches this repo for changes
+# ==============================================================================
+
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: homenetes
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/matta-kelly/homenetes
+  ref:
+    branch: main
+  # Uncomment if repo is private:
+  # secretRef:
+  #   name: homenetes-git-auth

@@ -1,12 +1,11 @@
 # ==============================================================================
-# Root Kustomization
+# Application Namespaces
 # ==============================================================================
-# Entry point for Flux - references all subdirectories
+# External application repos deployed via Flux
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cluster-vars.yaml
-  - infrastructure
-  - namespaces
+  - homenetes
+  # - lotus-lake  # TODO: Enable when ready

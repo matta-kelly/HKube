@@ -1,0 +1,33 @@
+# ==============================================================================
+# Homenetes Flux Kustomization
+# ==============================================================================
+# Deploys applications from the homenetes repo into the homenetes namespace
+# Depends on infrastructure-services (CNPG, Traefik, Authentik, etc.)
+# ==============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: homenetes
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: homenetes
+  path: ./
+  prune: true
+  wait: true
+  targetNamespace: homenetes
+  dependsOn:
+    - name: infrastructure-services
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars

@@ -14,8 +14,11 @@ data:
   # Base domain
   DOMAIN: datamountainsolutions.com
 
-  # Cluster subdomain (services live here)
+  # Cluster subdomain (infrastructure services)
   CLUSTER_DOMAIN: kube.datamountainsolutions.com
+
+  # Homenetes subdomain (homelab apps)
+  HOMENETES_DOMAIN: homenetes.datamountainsolutions.com
 
   # Admin email (for Let's Encrypt, etc.)
   ADMIN_EMAIL: admin@datamountainsolutions.com

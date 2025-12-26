@@ -1,12 +1,11 @@
 # ==============================================================================
-# Root Kustomization
-# ==============================================================================
-# Entry point for Flux - references all subdirectories
+# Homenetes Namespace Kustomization
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cluster-vars.yaml
-  - infrastructure
-  - namespaces
+  - namespace.yaml
+  - source.yaml
+  - homenetes.yaml
+  # - secrets.yaml  # TODO: Add when apps need secrets
