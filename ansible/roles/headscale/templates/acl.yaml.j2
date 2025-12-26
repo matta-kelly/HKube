@@ -1,0 +1,17 @@
+{
+  "groups": {
+    "group:admin": ["mkultra@{{ domain }}"]
+  },
+  "tagOwners": {
+    "tag:infra": ["group:admin"],
+    "tag:client-a": ["group:admin"],
+    "tag:client-b": ["group:admin"]
+  },
+  "acls": [
+    {"action": "accept", "src": ["group:admin"], "dst": ["*:*"]},
+    {"action": "accept", "src": ["tag:infra"], "dst": ["tag:infra:*"]},
+    {"action": "accept", "src": ["tag:client-a"], "dst": ["tag:client-a:*"]},
+    {"action": "accept", "src": ["tag:client-b"], "dst": ["tag:client-b:*"]},
+    {"action": "accept", "src": ["*"], "dst": ["*:*"]}
+  ]
+}

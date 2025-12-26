@@ -27,6 +27,25 @@
     mode: "0600"
   notify: Restart Headscale
 
+- name: Write OIDC client secret
+  ansible.builtin.copy:
+    content: "{{ oidc_client_secret }}"
+    dest: /etc/headscale/oidc_client_secret
+    owner: headscale
+    group: headscale
+    mode: "0600"
+  when: oidc_enabled | default(false)
+  notify: Restart Headscale
+
+- name: Deploy ACL policy
+  ansible.builtin.template:
+    src: acl.yaml.j2
+    dest: /etc/headscale/acl.yaml
+    owner: headscale
+    group: headscale
+    mode: "0600"
+  notify: Restart Headscale
+
 - name: Enable and start Headscale
   ansible.builtin.systemd:
     name: headscale

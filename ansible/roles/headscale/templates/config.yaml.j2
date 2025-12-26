@@ -52,3 +52,23 @@ tls_letsencrypt_hostname: "{{ headscale_domain }}"
 tls_letsencrypt_cache_dir: /var/lib/headscale/cache
 tls_letsencrypt_challenge_type: HTTP-01
 tls_letsencrypt_listen: :80
+
+{% if oidc_enabled | default(false) %}
+# OIDC Authentication via Authentik
+oidc:
+  only_start_if_oidc_is_available: true
+  issuer: "https://auth.{{ kube_domain }}/application/o/headscale/"
+  client_id: "{{ oidc_client_id }}"
+  client_secret_path: /etc/headscale/oidc_client_secret
+  scope: ["openid", "profile", "email"]
+  pkce:
+    enabled: true
+    method: S256
+  strip_email_domain: true
+  allowed_domains:
+    - "{{ domain }}"
+{% endif %}
+
+# ACL Policy
+policy:
+  path: /etc/headscale/acl.yaml
