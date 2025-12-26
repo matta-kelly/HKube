@@ -13,6 +13,11 @@ spec:
   # PostgreSQL version
   imageName: ghcr.io/cloudnative-pg/postgresql:16.2
 
+  # Run on bulk storage node (gpa-server)
+  affinity:
+    nodeSelector:
+      storage.h-kube.io/bulk: "true"
+
   # Primary storage
   storage:
     size: 5Gi
