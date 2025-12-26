@@ -11,4 +11,4 @@ metadata:
   namespace: flux-system
 data:
   ENTITY_NAME: "landl"
-  ENTITY_DOMAIN: "landl.${DOMAIN}"
+  ENTITY_DOMAIN: "landl.datamountainsolutions.com"
