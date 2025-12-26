@@ -51,10 +51,12 @@ spec:
       replicas: 1
       nodeSelector: |
         storage.h-kube.io/bulk: "true"
-      data:
-        type: persistentVolumeClaim
-        size: 100Gi
-        storageClass: local-path
+      dataDirs:
+        - name: data1
+          type: "persistentVolumeClaim"
+          size: "800Gi"
+          storageClass: "local-path"
+          maxVolumes: 0
       rack: home
       dataCenter: default
 
