@@ -40,8 +40,8 @@ spec:
           header_property: username
           headers: "Name:X-authentik-name Email:X-authentik-email Groups:X-authentik-groups"
           auto_sign_up: true
-          # Map Authentik groups to Grafana roles
-          role_attribute_path: contains(groups[*], 'admin') && 'Admin' || 'Viewer'
+        users:
+          auto_assign_org_role: Admin
 
       ingress:
         enabled: true
