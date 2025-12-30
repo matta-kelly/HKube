@@ -28,24 +28,18 @@ spec:
       nodeSelector:
         storage.h-kube.io/bulk: "true"
 
-      # Inject OAuth credentials from secret
-      envFromSecret: grafana-oauth-secret
-
       # Grafana configuration
       grafana.ini:
         server:
           root_url: https://grafana.${CLUSTER_DOMAIN}
         auth:
-          disable_login_form: true  # OAuth only, no password login
-        auth.generic_oauth:
+          disable_login_form: true
+        auth.proxy:
           enabled: true
-          name: Authentik
-          allow_sign_up: true
-          # client_id and client_secret auto-loaded from GF_AUTH_GENERIC_OAUTH_* env vars
-          scopes: openid profile email
-          auth_url: https://auth.${CLUSTER_DOMAIN}/application/o/authorize/
-          token_url: https://auth.${CLUSTER_DOMAIN}/application/o/token/
-          api_url: https://auth.${CLUSTER_DOMAIN}/application/o/userinfo/
+          header_name: X-authentik-username
+          header_property: username
+          headers: "Name:X-authentik-name Email:X-authentik-email Groups:X-authentik-groups"
+          auto_sign_up: true
           # Map Authentik groups to Grafana roles
           role_attribute_path: contains(groups[*], 'Grafana Admins') && 'Admin' || 'Viewer'
 
@@ -54,6 +48,7 @@ spec:
         ingressClassName: traefik
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
+          traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
         hosts:
           - grafana.${CLUSTER_DOMAIN}
         tls:
