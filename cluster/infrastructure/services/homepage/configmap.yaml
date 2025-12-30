@@ -1,0 +1,129 @@
+# ==============================================================================
+# Homepage Configuration
+# ==============================================================================
+# Dashboard configuration for services, widgets, and settings.
+# Docs: https://gethomepage.dev/latest/configs/
+# ==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  # ---------------------------------------------------------------------------
+  # Settings
+  # ---------------------------------------------------------------------------
+  settings.yaml: |
+    title: H-Kube Dashboard
+    favicon: https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/kubernetes.png
+    theme: dark
+    color: slate
+    headerStyle: clean
+    layout:
+      Infrastructure:
+        style: row
+        columns: 4
+      Homelab:
+        style: row
+        columns: 2
+      Clients:
+        style: row
+        columns: 2
+
+  # ---------------------------------------------------------------------------
+  # Services - Main dashboard content
+  # ---------------------------------------------------------------------------
+  services.yaml: |
+    - Infrastructure:
+        - Grafana:
+            icon: grafana.png
+            href: https://grafana.kube.datamountainsolutions.com
+            description: Metrics & Dashboards
+            siteMonitor: https://grafana.kube.datamountainsolutions.com
+        - Authentik:
+            icon: authentik.png
+            href: https://auth.kube.datamountainsolutions.com
+            description: Identity & SSO
+            siteMonitor: https://auth.kube.datamountainsolutions.com
+        - Headscale:
+            icon: tailscale.png
+            href: https://mesh.kube.datamountainsolutions.com
+            description: Mesh Network Management
+            siteMonitor: https://mesh.kube.datamountainsolutions.com
+        - Traefik:
+            icon: traefik.png
+            href: https://grafana.kube.datamountainsolutions.com/d/traefik/traefik
+            description: Ingress Controller
+
+    - Homelab:
+        - Immich:
+            icon: immich.png
+            href: https://immich.homenetes.datamountainsolutions.com
+            description: Photo Management
+            siteMonitor: https://immich.homenetes.datamountainsolutions.com
+        - Vaultwarden:
+            icon: vaultwarden.png
+            href: https://vaultwarden.homenetes.datamountainsolutions.com
+            description: Password Manager
+            siteMonitor: https://vaultwarden.homenetes.datamountainsolutions.com
+
+    - Clients:
+        - Plane (LandL):
+            icon: plane.png
+            href: https://plane.landl.datamountainsolutions.com
+            description: Project Management
+            siteMonitor: https://plane.landl.datamountainsolutions.com
+
+  # ---------------------------------------------------------------------------
+  # Widgets - Top bar information
+  # ---------------------------------------------------------------------------
+  widgets.yaml: |
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "H-Kube"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - datetime:
+        format:
+          dateStyle: short
+          timeStyle: short
+          hour12: false
+
+  # ---------------------------------------------------------------------------
+  # Bookmarks - Quick links
+  # ---------------------------------------------------------------------------
+  bookmarks.yaml: |
+    - Developer:
+        - GitHub:
+            - icon: github.png
+              href: https://github.com/matta-kelly
+        - GitOps Repo:
+            - icon: git.png
+              href: https://github.com/matta-kelly/HKube
+
+    - External:
+        - Hetzner Cloud:
+            - icon: hetzner.png
+              href: https://console.hetzner.cloud
+        - Porkbun DNS:
+            - icon: porkbun.png
+              href: https://porkbun.com/account/domainsSpe498
+
+  # ---------------------------------------------------------------------------
+  # Docker - Not used (k8s mode)
+  # ---------------------------------------------------------------------------
+  docker.yaml: |
+
+  # ---------------------------------------------------------------------------
+  # Kubernetes - Service discovery config
+  # ---------------------------------------------------------------------------
+  kubernetes.yaml: |
+    mode: cluster
