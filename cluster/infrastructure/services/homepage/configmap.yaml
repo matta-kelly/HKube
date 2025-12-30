@@ -116,6 +116,9 @@ data:
         - Porkbun DNS:
             - icon: porkbun.png
               href: https://porkbun.com/account/domainsSpe498
+        - Cloudflare:
+            - icon: cloudflare.png
+              href: https://dash.cloudflare.com/cbf163d7b9bb9a346daca89ee24538cf/home/domains
 
   # ---------------------------------------------------------------------------
   # Docker - Not used (k8s mode)
