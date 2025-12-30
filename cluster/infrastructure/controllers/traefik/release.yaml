@@ -48,3 +48,17 @@ spec:
     logs:
       general:
         level: INFO
+
+    # -------------------------------------------------------------------------
+    # Prometheus Metrics
+    # -------------------------------------------------------------------------
+    metrics:
+      prometheus:
+        service:
+          enabled: true
+        serviceMonitor:
+          enabled: true
+          namespace: monitoring
+          namespaceSelector:
+            matchNames:
+              - kube-system
