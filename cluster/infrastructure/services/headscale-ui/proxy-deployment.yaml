@@ -1,0 +1,57 @@
+# ==============================================================================
+# Headscale API Proxy - Deployment
+# ==============================================================================
+# Nginx proxy that adds CORS headers for headscale-ui to reach Headscale API.
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headscale-proxy
+  namespace: headscale-ui
+  labels:
+    app: headscale-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headscale-proxy
+  template:
+    metadata:
+      labels:
+        app: headscale-proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          ports:
+            - containerPort: 8080
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 2
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: headscale-proxy-config

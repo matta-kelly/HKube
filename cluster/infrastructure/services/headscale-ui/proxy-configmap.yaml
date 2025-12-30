@@ -1,0 +1,63 @@
+# ==============================================================================
+# Headscale API Proxy - Nginx Config
+# ==============================================================================
+# Proxies requests to Headscale API with CORS headers.
+# This allows headscale-ui (same origin) to communicate with Headscale.
+# ==============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headscale-proxy-config
+  namespace: headscale-ui
+data:
+  nginx.conf: |
+    worker_processes 1;
+    error_log /dev/stderr info;
+
+    events {
+        worker_connections 256;
+    }
+
+    http {
+        access_log /dev/stdout;
+
+        server {
+            listen 8080;
+
+            location / {
+                # CORS headers - allow requests from the UI origin
+                add_header 'Access-Control-Allow-Origin' 'https://mesh.kube.datamountainsolutions.com' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept' always;
+                add_header 'Access-Control-Allow-Credentials' 'true' always;
+
+                # Handle preflight OPTIONS requests
+                if ($request_method = 'OPTIONS') {
+                    add_header 'Access-Control-Allow-Origin' 'https://mesh.kube.datamountainsolutions.com' always;
+                    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+                    add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept' always;
+                    add_header 'Access-Control-Allow-Credentials' 'true' always;
+                    add_header 'Access-Control-Max-Age' 86400;
+                    add_header 'Content-Length' 0;
+                    return 204;
+                }
+
+                # Proxy to Headscale API
+                proxy_pass https://headscale.datamountainsolutions.com;
+                proxy_ssl_verify off;
+                proxy_set_header Host headscale.datamountainsolutions.com;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+
+                # Pass through authorization header
+                proxy_pass_request_headers on;
+            }
+
+            location /health {
+                return 200 'OK';
+                add_header Content-Type text/plain;
+            }
+        }
+    }
