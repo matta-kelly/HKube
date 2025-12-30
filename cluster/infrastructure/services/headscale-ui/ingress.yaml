@@ -11,8 +11,7 @@ metadata:
   namespace: headscale-ui
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # TODO: Re-enable after creating Authentik Application for mesh.${CLUSTER_DOMAIN}
-    # traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
