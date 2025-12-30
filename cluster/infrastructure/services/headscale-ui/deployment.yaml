@@ -1,0 +1,37 @@
+# ==============================================================================
+# Headscale UI Deployment
+# ==============================================================================
+# Web UI for managing Headscale. This is a client-side app - the browser
+# connects directly to the Headscale API at headscale.datamountainsolutions.com.
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headscale-ui
+  namespace: headscale-ui
+  labels:
+    app: headscale-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headscale-ui
+  template:
+    metadata:
+      labels:
+        app: headscale-ui
+    spec:
+      containers:
+        - name: headscale-ui
+          image: ghcr.io/gurucomputing/headscale-ui:latest
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

@@ -1,0 +1,31 @@
+# ==============================================================================
+# Headscale UI Ingress
+# ==============================================================================
+# Exposed at mesh.${CLUSTER_DOMAIN} with Authentik SSO protection.
+# ==============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: headscale-ui
+  namespace: headscale-ui
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: mesh.${CLUSTER_DOMAIN}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: headscale-ui
+                port:
+                  name: http
+  tls:
+    - hosts:
+        - mesh.${CLUSTER_DOMAIN}
+      secretName: headscale-ui-tls

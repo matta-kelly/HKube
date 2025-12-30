@@ -1,0 +1,17 @@
+# ==============================================================================
+# Headscale UI Service
+# ==============================================================================
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: headscale-ui
+  namespace: headscale-ui
+spec:
+  selector:
+    app: headscale-ui
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
