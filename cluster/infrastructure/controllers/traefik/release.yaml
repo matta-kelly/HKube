@@ -20,6 +20,8 @@ spec:
   values:
     deployment:
       replicas: 1
+      strategy:
+        type: Recreate
 
     # Bind to host ports so public IP works
     ports:
