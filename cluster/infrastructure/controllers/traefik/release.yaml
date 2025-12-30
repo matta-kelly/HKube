@@ -61,6 +61,8 @@ spec:
         serviceMonitor:
           enabled: true
           namespace: monitoring
+          additionalLabels:
+            release: kube-prometheus-stack
           namespaceSelector:
             matchNames:
               - kube-system
