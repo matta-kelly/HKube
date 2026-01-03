@@ -47,26 +47,41 @@
     labels_source: "inventory"
   when: k3s_labels is defined
 
-# Option 2: Fall back to hardware detection (local bootstrap without inventory)
+# ------------------------------------------------------------------------------
+# Hardware Detection (always runs for validation)
+# ------------------------------------------------------------------------------
 - name: Detect NVMe storage
-  ansible.builtin.shell: lsblk -d -o NAME,TYPE | grep -q nvme
+  ansible.builtin.shell: lsblk -d -o NAME,TRAN 2>/dev/null | grep -q nvme
   register: has_nvme
   failed_when: false
   changed_when: false
-  when: k3s_labels is not defined
 
 - name: Detect bulk storage mount
   ansible.builtin.stat:
     path: /mnt/bulk-storage
   register: bulk_storage_mount
-  when: k3s_labels is not defined
 
+# Validate config matches hardware (warn on mismatch)
+- name: Validate storage config matches hardware
+  ansible.builtin.debug:
+    msg: |
+      WARNING: Storage config mismatch detected!
+        Config says nvme={{ k3s_labels['storage.h-kube.io/nvme'] | default('not set') }}
+        Hardware has nvme={{ 'true' if has_nvme.rc == 0 else 'false' }}
+
+      Update config/config.yaml and re-run: make generate && make node-configure NODE={{ node_hostname }}
+  when:
+    - k3s_labels is defined
+    - k3s_labels['storage.h-kube.io/nvme'] is defined
+    - (k3s_labels['storage.h-kube.io/nvme'] | lower == 'true') != (has_nvme.rc == 0)
+
+# Option 2: Fall back to hardware detection (local bootstrap without inventory)
 - name: Build labels from hardware detection
   ansible.builtin.set_fact:
     node_labels: >-
       --node-label=node.h-kube.io/role={{ k3s_role }}
-      {% if has_nvme.rc == 0 %}--node-label=storage.h-kube.io/nvme=true{% endif %}
-      {% if bulk_storage_mount.stat.exists | default(false) %}--node-label=storage.h-kube.io/bulk=true{% endif %}
+      {% if has_nvme.rc == 0 %}--node-label=storage.h-kube.io/nvme=true{% else %}--node-label=storage.h-kube.io/nvme=false{% endif %}
+      {% if bulk_storage_mount.stat.exists | default(false) %}--node-label=storage.h-kube.io/bulk=true{% else %}--node-label=storage.h-kube.io/bulk=false{% endif %}
     labels_source: "hardware-detection"
   when: k3s_labels is not defined
 
