@@ -12,4 +12,6 @@
     name: fail2ban
     state: restarted
 
-
+- name: Restart auditd
+  ansible.builtin.command: service auditd restart
+  # auditd doesn't support systemctl restart, must use service command

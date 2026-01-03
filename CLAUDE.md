@@ -1,48 +1,87 @@
 # H-Kube Project Guidelines
 
+## Configuration Pattern
+
+**Source of Truth:**
+- `config/config.yaml` - Node definitions, labels, SSH keys
+- `config/secrets.env` - Tokens and secrets
+
+**Generated Files** (in `generated/`):
+- `inventory.yml` - Ansible inventory
+- `cluster-config.yaml` - Live cluster state
+- `network-status.yaml` - Tailscale mesh state
+
+**Workflow:**
+```bash
+make generate       # config/ -> generated/inventory.yml
+make cluster-status # Live cluster -> generated/cluster-config.yaml
+```
+
 ## Cluster Access
 
-**SSH Hosts** (use these names, defined in ~/.ssh/config):
-- `cloud-cp` - Control plane node (Hetzner)
-- `gpa-server` - Worker node (local)
+**SSH Hosts** (defined in ~/.ssh/config):
+- `cloud-cp` - Control plane (Hetzner)
+- `gpa-server` - Home worker
 
-**Kubectl**: Always use `sudo kubectl` when running commands on cluster nodes.
-
+**Kubectl**: Always use `sudo kubectl` on cluster nodes:
 ```bash
-# Correct
 ssh cloud-cp "sudo kubectl get pods -A"
-
-# Wrong - permission denied
-ssh cloud-cp "kubectl get pods -A"
 ```
+
+## Node Labels
+
+All labels use standardized prefixes:
+
+| Prefix | Purpose |
+|--------|---------|
+| `node.h-kube.io/*` | Node metadata (role, type, location) |
+| `storage.h-kube.io/*` | Storage capabilities (nvme, bulk) |
+| `capability.h-kube.io/*` | Hardware features (gpu) |
+
+### Standard Labels
+
+| Label | Values | Meaning |
+|-------|--------|---------|
+| `node.h-kube.io/role` | `server`, `agent` | K3s role |
+| `node.h-kube.io/type` | `cloud`, `home` | Deployment type |
+| `node.h-kube.io/location` | `cloud`, `home` | Physical location |
+| `storage.h-kube.io/bulk` | `true`, `false` | Has bulk HDD |
+| `storage.h-kube.io/nvme` | `true`, `false` | Has fast NVMe |
+
+### Workload Placement
+
+```yaml
+# Correct - uses labels
+nodeSelector:
+  storage.h-kube.io/bulk: "true"
+
+# Wrong - hardcoded hostname
+nodeSelector:
+  kubernetes.io/hostname: gpa-server
+```
+
+**Placement patterns:**
+- `storage.h-kube.io/bulk: "true"` - Data-heavy apps (Immich, Prometheus)
+- `node.h-kube.io/role: server` - Lightweight metadata (SeaweedFS master)
+- `node.h-kube.io/location: home` - Colocated apps needing local access
 
 ## Secrets Management
 
-**Always use SOPS** for any secrets in the cluster directory:
-
+**SOPS** for cluster secrets:
 ```bash
-# Encrypt a new secret
-sops -e -i cluster/path/to/secret.yaml
-
-# Edit an encrypted secret
-sops cluster/path/to/secret.yaml
-
-# View decrypted content
-sops -d cluster/path/to/secret.yaml
+sops -e -i cluster/path/to/secret.yaml  # Encrypt
+sops cluster/path/to/secret.yaml         # Edit
+sops -d cluster/path/to/secret.yaml      # View
 ```
 
-**Never commit plaintext secrets** to git. All secrets must be SOPS-encrypted before committing.
-
-The age key is stored in `~/.config/sops/age/keys.txt` locally and in the `sops-age` secret in the `flux-system` namespace.
+Age key: `~/.config/sops/age/keys.txt`
 
 ## Flux Variables
 
-**Never hardcode domains or emails**. Use Flux variable substitution:
-
-Variables are defined in `cluster/cluster-vars.yaml`:
-- `${DOMAIN}` - Base domain (datamountainsolutions.com)
-- `${CLUSTER_DOMAIN}` - Cluster subdomain (kube.datamountainsolutions.com)
-- `${ADMIN_EMAIL}` - Admin email for certs, etc.
+Defined in `cluster/cluster-vars.yaml`:
+- `${DOMAIN}` - Base domain
+- `${CLUSTER_DOMAIN}` - Cluster subdomain
+- `${ADMIN_EMAIL}` - Admin email
 
 ```yaml
 # Correct
@@ -54,106 +93,80 @@ hosts:
   - grafana.kube.datamountainsolutions.com
 ```
 
-## Node Labels & Placement
+## Bootstrap Process
 
-**Never hardcode hostnames** in nodeSelector. Use labels instead:
-
-### Standard Labels (applied during bootstrap)
-
-| Label | Values | Meaning |
-|-------|--------|---------|
-| `node.h-kube.io/role` | `server`, `agent` | Control plane vs worker |
-| `storage.h-kube.io/nvme` | `true` | Node has NVMe storage |
-| `storage.h-kube.io/bulk` | `true` | Node has bulk HDD storage |
-
-### Usage in Manifests
-
-```yaml
-# Correct - uses labels (works on any node with bulk storage)
-nodeSelector:
-  storage.h-kube.io/bulk: "true"
-
-# Wrong - hardcoded hostname
-nodeSelector:
-  kubernetes.io/hostname: gpa-server
+**Remote bootstrap** (from workstation):
+```bash
+make bootstrap-node NODE=<name>
 ```
 
-### Placement Guidelines
+Runs these roles in order:
+1. `base` - Security hardening (optional, for fresh systems)
+2. `tailscale` - Join mesh
+3. `common` - K8s prerequisites
+4. `k3s` - Install k3s with labels from inventory
+5. `flux` - GitOps (server only)
 
-**Control plane (`node.h-kube.io/role: server`):**
-- Flux controllers
-- CoreDNS
-- Lightweight metadata services (SeaweedFS master/filer)
-
-**Workers with bulk storage (`storage.h-kube.io/bulk: "true"`):**
-- SeaweedFS volumes
-- Application data
-
-**Workers with NVMe (`storage.h-kube.io/nvme: "true"`):**
-- Databases
-- Caches
-- Performance-sensitive workloads
-
-### View Cluster State
-
+**Local bootstrap** (on the node):
 ```bash
-# Generate cluster-config.yaml from live cluster
-make cluster-status
-
-# View node labels directly
-ssh cloud-cp "sudo kubectl get nodes --show-labels"
-```
-
-## GitOps Workflow
-
-1. Make changes to YAML files in `cluster/`
-2. Encrypt any secrets with SOPS
-3. Commit and push to main branch
-4. Flux automatically reconciles (or force with annotation)
-
-**Force reconcile**:
-```bash
-ssh cloud-cp "sudo kubectl annotate --overwrite -n flux-system kustomization/flux-system reconcile.fluxcd.io/requestedAt=\"\$(date +%s)\""
+make join-mesh NODE_HOSTNAME=<name>
+make bootstrap NODE_HOSTNAME=<name>
 ```
 
 ## Storage
 
-**local-path-provisioner** is configured per node in `cluster/infrastructure/configs/local-path/`:
-- `gpa-server`: `/mnt/bulk-storage/k3s` (1TB HDD)
+**local-path-provisioner** paths:
+- `gpa-server`: `/mnt/bulk-storage/k3s` (bulk HDD)
 - Default: `/var/lib/rancher/k3s/storage` (NVMe/SSD)
 
-**SeaweedFS** provides distributed storage:
-- S3-compatible API for object storage
-- CSI driver for PVCs (future)
+Config: `cluster/infrastructure/configs/local-path/configmap.yaml`
+
+**SeaweedFS** provides:
+- S3-compatible storage
+- Backup destination for CNPG databases
 
 ## Directory Structure
 
 ```
 cluster/
-├── cluster-vars.yaml          # Flux variables (domain, email, etc.)
-├── kustomization.yaml         # Root kustomization
-├── flux-system/               # Flux bootstrap (don't modify gotk-components.yaml)
+├── cluster-vars.yaml          # Flux variables
+├── flux-system/               # Flux bootstrap
 └── infrastructure/
     ├── controllers/           # Operators (cert-manager, traefik, cnpg)
-    ├── configs/               # CRD-dependent configs (ClusterIssuers, middlewares, local-path)
-    └── services/              # Applications (authentik, prometheus, seaweedfs)
+    ├── configs/               # CRDs (issuers, middlewares, local-path)
+    └── services/              # Apps (authentik, prometheus, seaweedfs)
+
+config/
+├── config.yaml                # Node definitions (SSOT)
+└── secrets.env                # Tokens/secrets
+
+generated/
+├── inventory.yml              # Ansible inventory
+├── cluster-config.yaml        # Cluster state
+└── network-status.yaml        # Mesh state
 ```
 
-## Authentication
+## Common Tasks
 
-**Authentik** is the SSO provider at `auth.${CLUSTER_DOMAIN}`:
-- Grafana uses OAuth2 (native integration)
-- Other services use Traefik ForwardAuth middleware
+**Add a new node:**
+1. Add to `config/config.yaml`
+2. `make generate`
+3. `make bootstrap-node NODE=<name>`
+4. `make cluster-status` to verify
 
-**Traefik ForwardAuth**: Add this annotation to protect any ingress:
-```yaml
-annotations:
-  traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
+**Update node labels:**
+1. Edit `config/config.yaml`
+2. `make generate`
+3. `make node-configure NODE=<name>`
+
+**Force Flux reconcile:**
+```bash
+ssh cloud-cp "sudo kubectl annotate --overwrite -n flux-system kustomization/flux-system reconcile.fluxcd.io/requestedAt=\"\$(date +%s)\""
 ```
 
-## Research Before Acting
+## Principles
 
-When encountering issues:
-1. Check official documentation first
-2. Verify versions and compatibility
-3. Don't trial-and-error - understand the problem before fixing
+1. **Config drives state** - `config/config.yaml` is the source of truth
+2. **Generate, don't edit** - Never edit files in `generated/`
+3. **Labels, not hostnames** - Use labels for workload placement
+4. **Document as you go** - Problems become documentation

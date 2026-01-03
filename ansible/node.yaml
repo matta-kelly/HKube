@@ -1,0 +1,42 @@
+# ==============================================================================
+# Node Bootstrap Playbook (Remote)
+# ==============================================================================
+# Bootstraps k3s agent nodes from workstation.
+#
+# Usage:
+#   make bootstrap-node NODE=monkeybusiness
+#   make node-configure NODE=monkeybusiness
+# ==============================================================================
+
+---
+- name: Bootstrap Node
+  hosts: all
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Verify connectivity
+      ansible.builtin.ping:
+
+    - name: Determine k3s role from inventory
+      ansible.builtin.set_fact:
+        k3s_role: "{{ 'server' if k3s_labels['node.h-kube.io/role'] == 'server' else 'agent' }}"
+      when: k3s_labels is defined
+
+    - name: Default to agent if no labels
+      ansible.builtin.set_fact:
+        k3s_role: "agent"
+      when: k3s_labels is not defined
+
+  roles:
+    - role: base
+      when: include_base | default(true) | bool
+
+    - role: tailscale
+
+    - role: common
+
+    - role: k3s
+
+    - role: flux
+      when: k3s_role == 'server'

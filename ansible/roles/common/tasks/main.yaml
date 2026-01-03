@@ -21,8 +21,25 @@
       - ca-certificates
       - gnupg
       - python3-pip
+      - python3-venv
+      - python3-kubernetes
       - "linux-modules-extra-{{ ansible_kernel }}"
     state: present
+  ignore_errors: true
+  register: apt_packages
+
+# Fallback: Install kubernetes via pip in venv if apt package unavailable
+- name: Create Python venv for ansible modules
+  ansible.builtin.command:
+    cmd: python3 -m venv /opt/ansible-venv
+    creates: /opt/ansible-venv/bin/python
+
+- name: Install kubernetes library in venv
+  ansible.builtin.pip:
+    name: kubernetes
+    state: present
+    virtualenv: /opt/ansible-venv
+  when: apt_packages.failed | default(false)
 
 # ------------------------------------------------------------------------------
 # Install workflow tools
@@ -33,12 +50,6 @@
       - make
       - direnv
     state: present
-
-- name: Install Python kubernetes library
-  ansible.builtin.pip:
-    name: kubernetes
-    state: present
-    extra_args: --break-system-packages
     
 # ------------------------------------------------------------------------------
 # Swap - must be disabled for kubernetes

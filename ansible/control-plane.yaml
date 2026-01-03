@@ -10,9 +10,6 @@
   gather_facts: true
   become: true
 
-  vars_files:
-    - ../cluster-config.yaml
-
   pre_tasks:
     - name: Verify connectivity
       ansible.builtin.ping:

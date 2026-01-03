@@ -2,16 +2,18 @@
 # H-Kube Makefile
 # ==============================================================================
 
-.PHONY: help setup venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap cluster-status
+.PHONY: help setup generate venv anchor anchor-destroy anchor-init anchor-configure anchor-ssh cp cp-destroy cp-init cp-configure cp-ssh join-mesh bootstrap bootstrap-node cluster-status network-status node-configure
 
 help:
 	@echo "H-Kube Commands:"
 	@echo ""
-	@echo "  Setup:"
-	@echo "    make setup              - Initial setup (creates .env)"
+	@echo "  Setup & Generate:"
+	@echo "    make setup              - Initial setup (creates config/)"
+	@echo "    make generate           - Generate inventory from config/"
 	@echo ""
-	@echo "  Cluster Status:"
-	@echo "    make cluster-status     - Generate cluster-config.yaml from live cluster"
+	@echo "  Document State:"
+	@echo "    make cluster-status     - Document K3s cluster state"
+	@echo "    make network-status     - Document Tailscale mesh state"
 	@echo ""
 	@echo "  Anchor VPS:"
 	@echo "    make anchor             - Create Anchor VPS (Terraform)"
@@ -27,16 +29,23 @@ help:
 	@echo "    make cp-configure       - Re-run VPS config (as admin user)"
 	@echo "    make cp-ssh             - SSH into Control Plane VPS"
 	@echo ""
-	@echo "  Node Bootstrap (run on node itself):"
-	@echo "    make join-mesh          - Join Tailscale mesh"
-	@echo "    make bootstrap          - Bootstrap node (prompts for options)"
+	@echo "  Node Bootstrap:"
+	@echo "    make bootstrap-node NODE=<name>  - Bootstrap node remotely (from workstation)"
+	@echo "    make node-configure NODE=<name>  - Re-configure node remotely"
+	@echo ""
+	@echo "  Local Bootstrap (run ON the node):"
+	@echo "    make join-mesh NODE_HOSTNAME=<name>  - Join Tailscale mesh"
+	@echo "    make bootstrap NODE_HOSTNAME=<name>  - Full local bootstrap"
 
 # ------------------------------------------------------------------------------
-# Cluster Status
+# Document State
 # ------------------------------------------------------------------------------
 
 cluster-status:
-	@./scripts/generate-cluster-config.sh
+	@./scripts/document-cluster.sh
+
+network-status:
+	@PROJECT_ROOT="$(CURDIR)" ./scripts/document-network.sh
 
 # ------------------------------------------------------------------------------
 # Initial Setup
@@ -44,13 +53,22 @@ cluster-status:
 
 setup:
 	@echo "Setting up h-kube..."
-	@test -f .env || cp .env.example .env
-	@bash -c 'source .env 2>/dev/null && \
-		if [ -n "$$HCLOUD_TOKEN" ] && command -v hcloud &>/dev/null; then \
-			hcloud context list | grep -q h-kube || echo "$$HCLOUD_TOKEN" | hcloud context create h-kube; \
-		fi'
+	@mkdir -p config
+	@test -f config/config.yaml || cp config.example/config.yaml config/config.yaml
+	@test -f config/secrets.env || cp config.example/secrets.env config/secrets.env
 	@echo ""
-	@echo "Done. Edit .env with your values, then run: make anchor"
+	@echo "Done. Edit config/config.yaml and config/secrets.env, then run: make generate"
+
+# ------------------------------------------------------------------------------
+# Generate Inventory
+# ------------------------------------------------------------------------------
+
+generate: venv
+	@test -f config/config.yaml || (echo "Error: config/config.yaml not found. Run: make setup" && exit 1)
+	@test -f config/secrets.env || (echo "Error: config/secrets.env not found. Run: make setup" && exit 1)
+	@echo "Generating inventory..."
+	@bash -c 'source .venv/bin/activate && python scripts/generate.py'
+	@echo "Done. Generated files in generated/"
 
 # ------------------------------------------------------------------------------
 # Python Virtual Environment
@@ -60,7 +78,7 @@ venv:
 	@if [ ! -d ".venv" ]; then \
 		echo "Creating Python virtual environment..."; \
 		python3 -m venv .venv; \
-		. .venv/bin/activate && pip install --upgrade pip && pip install ansible; \
+		. .venv/bin/activate && pip install --upgrade pip && pip install ansible pyyaml; \
 		echo "Virtual environment created."; \
 	fi
 
@@ -68,32 +86,30 @@ venv:
 # Anchor VPS - Terraform
 # ------------------------------------------------------------------------------
 
-anchor:
-	@test -f .env || (echo "Error: .env not found. Run: make setup" && exit 1)
-	@bash -c 'source .env && test -n "$$HCLOUD_TOKEN" || (echo "HCLOUD_TOKEN not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$SSH_PUBLIC_KEY_FILE" || (echo "SSH_PUBLIC_KEY_FILE not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$HEADSCALE_DOMAIN" || (echo "HEADSCALE_DOMAIN not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$HEADSCALE_BASE_DOMAIN" || (echo "HEADSCALE_BASE_DOMAIN not set" && exit 1)'
+anchor: venv
+	@test -f config/secrets.env || (echo "Error: config/secrets.env not found. Run: make setup" && exit 1)
+	@test -f config/config.yaml || (echo "Error: config/config.yaml not found. Run: make setup" && exit 1)
+	@bash -c 'source config/secrets.env && test -n "$$HCLOUD_TOKEN" || (echo "HCLOUD_TOKEN not set in config/secrets.env" && exit 1)'
 	@echo "Creating Anchor VPS..."
-	@bash -c 'source .env && \
+	@bash -c 'source .venv/bin/activate && source config/secrets.env && \
+		SSH_KEY_FILE=$$(python -c "import yaml; c=yaml.safe_load(open(\"config/config.yaml\")); import os; print(os.path.expanduser(c[\"ssh_keys\"][\"hetzner\"]))") && \
 		export TF_VAR_hcloud_token="$$HCLOUD_TOKEN" && \
-		export TF_VAR_ssh_public_key="$$(cat $$SSH_PUBLIC_KEY_FILE)" && \
+		export TF_VAR_ssh_public_key="$$(cat $$SSH_KEY_FILE.pub)" && \
 		cd terraform/anchor-vps && \
 		terraform init && \
 		terraform apply'
-	@./scripts/generate-inventory.sh
+	@$(MAKE) generate
 	@echo ""
 	@echo "=========================================="
-	@echo "Anchor VPS created."
-	@echo ""
-	@echo "Run: make anchor-init"
+	@echo "Anchor VPS created. Run: make anchor-init"
 	@echo "=========================================="
 
-anchor-destroy:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && \
+anchor-destroy: venv
+	@test -f config/secrets.env || (echo "Error: config/secrets.env not found" && exit 1)
+	@bash -c 'source .venv/bin/activate && source config/secrets.env && \
+		SSH_KEY_FILE=$$(python -c "import yaml; c=yaml.safe_load(open(\"config/config.yaml\")); import os; print(os.path.expanduser(c[\"ssh_keys\"][\"hetzner\"]))") && \
 		export TF_VAR_hcloud_token="$$HCLOUD_TOKEN" && \
-		export TF_VAR_ssh_public_key="$$(cat $$SSH_PUBLIC_KEY_FILE)" && \
+		export TF_VAR_ssh_public_key="$$(cat $$SSH_KEY_FILE.pub)" && \
 		cd terraform/anchor-vps && \
 		terraform destroy'
 
@@ -101,54 +117,51 @@ anchor-destroy:
 # Anchor VPS - Ansible
 # ------------------------------------------------------------------------------
 
-anchor-init: venv
-	@test -f ansible/inventory.yml || (echo "Run 'make anchor' first" && exit 1)
+anchor-init: generate
 	@echo "Initializing Anchor VPS (first run as root)..."
-	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook anchor.yaml -u root'
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml anchor.yaml -u root'
 	@echo ""
 	@echo "=========================================="
-	@echo "Done! Save the HEADSCALE_AUTHKEY to .env"
+	@echo "Done! Save the HEADSCALE_AUTHKEY to config/secrets.env"
 	@echo "=========================================="
 
-anchor-configure: venv
-	@test -f ansible/inventory.yml || (echo "Run 'make anchor' first" && exit 1)
+anchor-configure: generate
 	@echo "Configuring Anchor VPS..."
-	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook anchor.yaml'
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml anchor.yaml'
 
 anchor-ssh:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && \
-		ANCHOR_IP=$$(cd terraform/anchor-vps && terraform output -raw ipv4_address) && \
-		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} $${ANCHOR_USER:-mkultra}@$$ANCHOR_IP'
+	@bash -c 'ANCHOR_IP=$$(cd terraform/anchor-vps && terraform output -raw ipv4_address 2>/dev/null) && \
+		if [ -z "$$ANCHOR_IP" ]; then echo "Error: Could not get anchor IP from Terraform"; exit 1; fi && \
+		ssh mkultra@$$ANCHOR_IP'
 
 # ------------------------------------------------------------------------------
 # Control Plane VPS - Terraform
 # ------------------------------------------------------------------------------
 
-cp:
-	@test -f .env || (echo "Error: .env not found. Run: make setup" && exit 1)
-	@bash -c 'source .env && test -n "$$HCLOUD_TOKEN" || (echo "HCLOUD_TOKEN not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$SSH_PUBLIC_KEY_FILE" || (echo "SSH_PUBLIC_KEY_FILE not set" && exit 1)'
+cp: venv
+	@test -f config/secrets.env || (echo "Error: config/secrets.env not found. Run: make setup" && exit 1)
+	@test -f config/config.yaml || (echo "Error: config/config.yaml not found. Run: make setup" && exit 1)
+	@bash -c 'source config/secrets.env && test -n "$$HCLOUD_TOKEN" || (echo "HCLOUD_TOKEN not set in config/secrets.env" && exit 1)'
 	@echo "Creating Control Plane VPS..."
-	@bash -c 'source .env && \
+	@bash -c 'source .venv/bin/activate && source config/secrets.env && \
+		SSH_KEY_FILE=$$(python -c "import yaml; c=yaml.safe_load(open(\"config/config.yaml\")); import os; print(os.path.expanduser(c[\"ssh_keys\"][\"hetzner\"]))") && \
 		export TF_VAR_hcloud_token="$$HCLOUD_TOKEN" && \
-		export TF_VAR_ssh_public_key="$$(cat $$SSH_PUBLIC_KEY_FILE)" && \
+		export TF_VAR_ssh_public_key="$$(cat $$SSH_KEY_FILE.pub)" && \
 		cd terraform/control-plane && \
 		terraform init && \
 		terraform apply'
-	@./scripts/generate-inventory.sh
+	@$(MAKE) generate
 	@echo ""
 	@echo "=========================================="
-	@echo "Control Plane VPS created."
-	@echo ""
-	@echo "Run: make cp-init"
+	@echo "Control Plane VPS created. Run: make cp-init"
 	@echo "=========================================="
 
-cp-destroy:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && \
+cp-destroy: venv
+	@test -f config/secrets.env || (echo "Error: config/secrets.env not found" && exit 1)
+	@bash -c 'source .venv/bin/activate && source config/secrets.env && \
+		SSH_KEY_FILE=$$(python -c "import yaml; c=yaml.safe_load(open(\"config/config.yaml\")); import os; print(os.path.expanduser(c[\"ssh_keys\"][\"hetzner\"]))") && \
 		export TF_VAR_hcloud_token="$$HCLOUD_TOKEN" && \
-		export TF_VAR_ssh_public_key="$$(cat $$SSH_PUBLIC_KEY_FILE)" && \
+		export TF_VAR_ssh_public_key="$$(cat $$SSH_KEY_FILE.pub)" && \
 		cd terraform/control-plane && \
 		terraform destroy'
 
@@ -156,34 +169,31 @@ cp-destroy:
 # Control Plane VPS - Ansible
 # ------------------------------------------------------------------------------
 
-cp-init: venv
-	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
+cp-init: generate
 	@echo "Initializing Control Plane VPS (first run as root)..."
-	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook control-plane.yaml -e ansible_user=root'
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml control-plane.yaml -e ansible_user=root'
 	@echo ""
 	@echo "=========================================="
 	@echo "Control Plane initialized."
 	@echo "=========================================="
 
-cp-configure: venv
-	@test -f ansible/inventory.yml || (echo "Run 'make cp' first" && exit 1)
+cp-configure: generate
 	@echo "Configuring Control Plane VPS..."
-	@bash -c 'source .venv/bin/activate && set -a && source .env && set +a && cd ansible && ansible-playbook control-plane.yaml'
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml control-plane.yaml'
 
 cp-ssh:
-	@test -f .env || (echo "Error: .env not found" && exit 1)
-	@bash -c 'source .env && \
-		CP_IP=$$(cd terraform/control-plane && terraform output -raw ipv4_address) && \
-		ssh -i $${SSH_PUBLIC_KEY_FILE%.pub} root@$$CP_IP'
+	@bash -c 'CP_IP=$$(cd terraform/control-plane && terraform output -raw ipv4_address 2>/dev/null) && \
+		if [ -z "$$CP_IP" ]; then echo "Error: Could not get CP IP from Terraform"; exit 1; fi && \
+		ssh mkultra@$$CP_IP'
 
 # ------------------------------------------------------------------------------
 # Node Bootstrap (run on the node itself)
 # ------------------------------------------------------------------------------
 
 join-mesh:
-	@test -f .env || (echo "Run 'make setup' first" && exit 1)
-	@bash -c 'source .env && test -n "$$HEADSCALE_AUTHKEY" || (echo "HEADSCALE_AUTHKEY not set" && exit 1)'
-	@bash -c 'source .env && test -n "$$NODE_HOSTNAME" || (echo "NODE_HOSTNAME not set" && exit 1)'
+	@test -f config/secrets.env || (echo "Error: config/secrets.env not found" && exit 1)
+	@bash -c 'source config/secrets.env && test -n "$$HEADSCALE_AUTHKEY" || (echo "HEADSCALE_AUTHKEY not set in config/secrets.env" && exit 1)'
+	@test -n "$(NODE_HOSTNAME)" || (echo "Error: NODE_HOSTNAME not set. Usage: make join-mesh NODE_HOSTNAME=mynode" && exit 1)
 	@echo "Installing Tailscale..."
 	@which tailscale > /dev/null || curl -fsSL https://tailscale.com/install.sh | sh
 	@echo "Checking current state..."
@@ -191,8 +201,10 @@ join-mesh:
 		echo "Already connected, logging out to re-register..."; \
 		sudo tailscale logout; \
 	fi'
-	@echo "Joining mesh..."
-	@bash -c 'source .env && sudo tailscale up --login-server https://$$HEADSCALE_DOMAIN --authkey $$HEADSCALE_AUTHKEY --hostname $$NODE_HOSTNAME'
+	@echo "Joining mesh as $(NODE_HOSTNAME)..."
+	@bash -c 'source config/secrets.env && \
+		DOMAIN=$$(grep -E "^[[:space:]]*domain:" config/config.yaml | head -1 | sed "s/.*domain:[[:space:]]*//") && \
+		sudo tailscale up --login-server https://headscale.$$DOMAIN --authkey $$HEADSCALE_AUTHKEY --hostname $(NODE_HOSTNAME)'
 	@echo "Verifying..."
 	@tailscale status
 
@@ -218,13 +230,10 @@ bootstrap: join-mesh
 			esac; \
 		done; \
 		\
-		source .env; \
+		source config/secrets.env; \
 		if [ "$$k3s_role" = "agent" ]; then \
 			if [ -z "$$K3S_TOKEN" ]; then \
-				echo "Error: K3S_TOKEN not set in .env (required for worker mode)" && exit 1; \
-			fi; \
-			if [ -z "$$K3S_URL" ]; then \
-				echo "Error: K3S_URL not set in .env (required for worker mode)" && exit 1; \
+				echo "Error: K3S_TOKEN not set in config/secrets.env (required for worker)" && exit 1; \
 			fi; \
 		fi; \
 		\
@@ -243,5 +252,22 @@ bootstrap: join-mesh
 		\
 		echo ""; \
 		echo "Bootstrapping..."; \
-		set -a && source .env && set +a && \
+		set -a && source config/secrets.env && set +a && \
 		cd ansible && ansible-playbook bootstrap.yaml -e "k3s_role=$$k3s_role include_base=$$include_base"'
+
+# ------------------------------------------------------------------------------
+# Remote Node Bootstrap (run from workstation)
+# ------------------------------------------------------------------------------
+
+bootstrap-node: generate
+	@test -n "$(NODE)" || (echo "Usage: make bootstrap-node NODE=<node-name>" && exit 1)
+	@echo "Bootstrapping $(NODE) remotely..."
+	@echo "(Enter sudo password when prompted - only needed for first run)"
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && \
+		cd ansible && ansible-playbook -i ../generated/inventory.yml node.yaml --limit $(NODE) --ask-become-pass'
+
+node-configure: generate
+	@test -n "$(NODE)" || (echo "Usage: make node-configure NODE=<node-name>" && exit 1)
+	@echo "Configuring $(NODE)..."
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && \
+		cd ansible && ansible-playbook -i ../generated/inventory.yml node.yaml --limit $(NODE)'

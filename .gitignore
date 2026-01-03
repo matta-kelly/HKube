@@ -3,16 +3,25 @@
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Secrets - NEVER commit these
+# Config directory - contains secrets (use config.example/ as template)
 # ------------------------------------------------------------------------------
-.vault_password
+config/
+
+# Legacy (can remove after migration)
 .env
+secrets.env
+config.yaml
+
+# Vault password files
+.vault_password
 *.decrypted
 *.decrypted.yaml
 *.decrypted.yml
 
-# Local kubeconfig (contains cluster creds)
-kubeconfig.yaml
+# ------------------------------------------------------------------------------
+# Generated outputs (regenerate with: make generate)
+# ------------------------------------------------------------------------------
+generated/
 
 # ------------------------------------------------------------------------------
 # Terraform
@@ -27,13 +36,21 @@ terraform/**/*.tfstate.*
 **/.terraform.lock.hcl
 
 # But DO commit terraform lock file for reproducibility
-!terraform/headscale-vps/.terraform.lock.hcl
+!terraform/anchor-vps/.terraform.lock.hcl
+!terraform/control-plane/.terraform.lock.hcl
 
 # ------------------------------------------------------------------------------
 # Ansible
 # ------------------------------------------------------------------------------
 *.retry
 ansible/inventory.yml
+
+# ------------------------------------------------------------------------------
+# Python
+# ------------------------------------------------------------------------------
+.venv/
+__pycache__/
+*.pyc
 
 # ------------------------------------------------------------------------------
 # Editor/IDE
@@ -48,6 +65,8 @@ ansible/inventory.yml
 # ------------------------------------------------------------------------------
 # What IS safe to commit
 # ------------------------------------------------------------------------------
-# - ansible/group_vars/all/vault.yaml (encrypted)
-# - .sops.yaml (contains public key only)
-# - ansible/inventory.yml (no secrets, just host info)
+# - config.example/          (templates, no secrets)
+# - ansible/                 (playbooks and roles)
+# - terraform/               (IaC definitions)
+# - scripts/                 (automation)
+# - Makefile                 (commands)

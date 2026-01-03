@@ -36,43 +36,53 @@
     tailscale_ip: "{{ tailscale_ip_result.stdout | trim }}"
 
 # ------------------------------------------------------------------------------
-# Hardware Detection - Detect storage and apply labels
+# Node Labels - From inventory (config.yaml) or hardware detection
 # ------------------------------------------------------------------------------
+
+# Option 1: Use labels from inventory (preferred - from config.yaml)
+- name: Build labels from inventory
+  ansible.builtin.set_fact:
+    node_labels: >-
+      {% for key, value in k3s_labels.items() %}--node-label={{ key }}={{ value }} {% endfor %}
+    labels_source: "inventory"
+  when: k3s_labels is defined
+
+# Option 2: Fall back to hardware detection (local bootstrap without inventory)
 - name: Detect NVMe storage
   ansible.builtin.shell: lsblk -d -o NAME,TYPE | grep -q nvme
   register: has_nvme
   failed_when: false
   changed_when: false
+  when: k3s_labels is not defined
 
 - name: Detect bulk storage mount
   ansible.builtin.stat:
     path: /mnt/bulk-storage
   register: bulk_storage_mount
+  when: k3s_labels is not defined
 
-- name: Get bulk storage size
-  ansible.builtin.shell: df -BG /mnt/bulk-storage | tail -1 | awk '{print $2}' | tr -d 'G'
-  register: bulk_storage_size
-  when: bulk_storage_mount.stat.exists
-  changed_when: false
-
-- name: Build node labels
+- name: Build labels from hardware detection
   ansible.builtin.set_fact:
     node_labels: >-
       --node-label=node.h-kube.io/role={{ k3s_role }}
       {% if has_nvme.rc == 0 %}--node-label=storage.h-kube.io/nvme=true{% endif %}
-      {% if bulk_storage_mount.stat.exists %}--node-label=storage.h-kube.io/bulk=true{% endif %}
+      {% if bulk_storage_mount.stat.exists | default(false) %}--node-label=storage.h-kube.io/bulk=true{% endif %}
+    labels_source: "hardware-detection"
+  when: k3s_labels is not defined
 
-- name: Display detected hardware
+- name: Display labels to apply
   ansible.builtin.debug:
     msg: |
-      Hardware detected:
-        - NVMe: {{ 'yes' if has_nvme.rc == 0 else 'no' }}
-        - Bulk storage (/mnt/bulk-storage): {{ 'yes (' + bulk_storage_size.stdout + 'GB)' if bulk_storage_mount.stat.exists else 'no' }}
-
+      Labels source: {{ labels_source }}
       Labels to apply:
+      {% if k3s_labels is defined %}
+      {% for key, value in k3s_labels.items() %}  - {{ key }}={{ value }}
+      {% endfor %}
+      {% else %}
         - node.h-kube.io/role={{ k3s_role }}
         {% if has_nvme.rc == 0 %}- storage.h-kube.io/nvme=true{% endif %}
-        {% if bulk_storage_mount.stat.exists %}- storage.h-kube.io/bulk=true{% endif %}
+        {% if bulk_storage_mount.stat.exists | default(false) %}- storage.h-kube.io/bulk=true{% endif %}
+      {% endif %}
 
 - name: Set agent facts from environment
   ansible.builtin.set_fact:
@@ -174,6 +184,35 @@
   when: k3s_role == 'agent'
 
 # ------------------------------------------------------------------------------
+# Health Checks
+# ------------------------------------------------------------------------------
+- name: Verify k3s server is healthy
+  ansible.builtin.command: kubectl get nodes
+  environment:
+    KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+  register: k3s_health
+  retries: 5
+  delay: 10
+  until: k3s_health.rc == 0
+  when: k3s_role == 'server'
+  changed_when: false
+
+- name: Verify agent registered with cluster
+  ansible.builtin.command: k3s kubectl get nodes
+  register: agent_health
+  retries: 6
+  delay: 10
+  until: agent_health.rc == 0 and node_hostname in agent_health.stdout
+  when: k3s_role == 'agent'
+  changed_when: false
+  failed_when: false
+
+- name: Agent health check result
+  ansible.builtin.debug:
+    msg: "{{ 'Node registered successfully' if (agent_health.rc == 0 and node_hostname in agent_health.stdout) else 'WARNING: Node may not be registered yet. Check with: kubectl get nodes' }}"
+  when: k3s_role == 'agent'
+
+# ------------------------------------------------------------------------------
 # Display K3s token (server only)
 # ------------------------------------------------------------------------------
 - name: Read K3s token
@@ -187,7 +226,7 @@
     msg: |
 
       =============================================
-      SAVE THIS TO .env:
+      SAVE THIS TO config/secrets.env:
 
       K3S_TOKEN="{{ k3s_token_file.content | b64decode | trim }}"
       =============================================
@@ -249,16 +288,28 @@
 # ------------------------------------------------------------------------------
 # Apply labels to existing nodes (idempotent)
 # ------------------------------------------------------------------------------
-- name: Apply storage labels to node (server)
+- name: Apply labels from inventory to node (server)
+  ansible.builtin.shell: |
+    {% for key, value in k3s_labels.items() %}
+    kubectl label node {{ node_hostname }} {{ key }}={{ value }} --overwrite
+    {% endfor %}
+  when:
+    - k3s_role == 'server'
+    - k3s_labels is defined
+  changed_when: true
+
+- name: Apply labels from hardware detection to node (server)
   ansible.builtin.shell: |
     kubectl label node {{ node_hostname }} node.h-kube.io/role={{ k3s_role }} --overwrite
     {% if has_nvme.rc == 0 %}
     kubectl label node {{ node_hostname }} storage.h-kube.io/nvme=true --overwrite
     {% endif %}
-    {% if bulk_storage_mount.stat.exists %}
+    {% if bulk_storage_mount.stat.exists | default(false) %}
     kubectl label node {{ node_hostname }} storage.h-kube.io/bulk=true --overwrite
     {% endif %}
-  when: k3s_role == 'server'
+  when:
+    - k3s_role == 'server'
+    - k3s_labels is not defined
   changed_when: true
 
 # ------------------------------------------------------------------------------
@@ -272,10 +323,16 @@
       K3s agent installed successfully!
       Node {{ node_hostname }} is joining the cluster.
 
+      Labels source: {{ labels_source }}
       Labels applied:
+      {% if k3s_labels is defined %}
+      {% for key, value in k3s_labels.items() %}  - {{ key }}={{ value }}
+      {% endfor %}
+      {% else %}
         - node.h-kube.io/role=agent
         {% if has_nvme.rc == 0 %}- storage.h-kube.io/nvme=true{% endif %}
-        {% if bulk_storage_mount.stat.exists %}- storage.h-kube.io/bulk=true{% endif %}
+        {% if bulk_storage_mount.stat.exists | default(false) %}- storage.h-kube.io/bulk=true{% endif %}
+      {% endif %}
 
       Check status with: kubectl get nodes --show-labels
       =============================================

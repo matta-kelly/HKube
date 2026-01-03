@@ -2,12 +2,16 @@
 # Base Role - Server Hardening
 # ==============================================================================
 # Applied to ALL servers (Headscale VPS, home server, Hetzner workers)
-# Installs: fail2ban, ufw, unattended-upgrades
-# Configures: SSH hardening, firewall, automatic updates
+#
+# Variables (all optional):
+#   admin_user: Username for admin (default: mkultra)
+#   ssh_port: SSH port (default: 22)
+#   ssh_public_key_file: Path to public key (skipped if not set)
+#   firewall_allow_ports: List of {port, proto} to allow
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# System Updates
+# System Updates (with idempotency)
 # ------------------------------------------------------------------------------
 
 - name: Update apt cache
@@ -15,9 +19,15 @@
     update_cache: true
     cache_valid_time: 3600
 
-- name: Upgrade all packages
+- name: Check for available upgrades
+  ansible.builtin.command: apt list --upgradable
+  register: upgradable_packages
+  changed_when: false
+
+- name: Upgrade packages (only if upgrades available)
   ansible.builtin.apt:
     upgrade: dist
+  when: upgradable_packages.stdout_lines | length > 1
 
 # ------------------------------------------------------------------------------
 # Install Security Packages
@@ -30,6 +40,8 @@
       - ufw
       - unattended-upgrades
       - apt-listchanges
+      - auditd
+      - audispd-plugins
     state: present
 
 # ------------------------------------------------------------------------------
@@ -38,22 +50,23 @@
 
 - name: Create admin user
   ansible.builtin.user:
-    name: "{{ admin_user }}"
+    name: "{{ admin_user | default('mkultra') }}"
     groups: sudo
     shell: /bin/bash
     create_home: true
     state: present
 
-- name: Add SSH key to admin user
+- name: Add SSH key to admin user (remote bootstrap)
   ansible.posix.authorized_key:
-    user: "{{ admin_user }}"
+    user: "{{ admin_user | default('mkultra') }}"
     key: "{{ lookup('file', ssh_public_key_file) }}"
     state: present
+  when: ssh_public_key_file is defined
 
 - name: Allow admin user passwordless sudo
   ansible.builtin.lineinfile:
-    path: /etc/sudoers.d/{{ admin_user }}
-    line: "{{ admin_user }} ALL=(ALL) NOPASSWD:ALL"
+    path: /etc/sudoers.d/{{ admin_user | default('mkultra') }}
+    line: "{{ admin_user | default('mkultra') }} ALL=(ALL) NOPASSWD:ALL"
     create: true
     mode: "0440"
     validate: "visudo -cf %s"
@@ -69,13 +82,46 @@
     line: "{{ item.line }}"
     state: present
   loop:
+    - { regexp: '^#?Port ', line: 'Port {{ ssh_port | default(22) }}' }
     - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
     - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
     - { regexp: '^#?PubkeyAuthentication', line: 'PubkeyAuthentication yes' }
     - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
     - { regexp: '^#?ClientAliveInterval', line: 'ClientAliveInterval 300' }
     - { regexp: '^#?ClientAliveCountMax', line: 'ClientAliveCountMax 2' }
+    - { regexp: '^#?X11Forwarding', line: 'X11Forwarding no' }
+    - { regexp: '^#?AllowAgentForwarding', line: 'AllowAgentForwarding no' }
+    - { regexp: '^#?AllowTcpForwarding', line: 'AllowTcpForwarding no' }
   notify: Restart SSH
+
+# ------------------------------------------------------------------------------
+# Kernel Hardening
+# ------------------------------------------------------------------------------
+
+- name: Apply kernel hardening sysctl
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-security.conf
+    reload: true
+  loop:
+    # Prevent IP spoofing
+    - { key: "net.ipv4.conf.all.rp_filter", value: "1" }
+    - { key: "net.ipv4.conf.default.rp_filter", value: "1" }
+    # Ignore ICMP redirects
+    - { key: "net.ipv4.conf.all.accept_redirects", value: "0" }
+    - { key: "net.ipv4.conf.default.accept_redirects", value: "0" }
+    - { key: "net.ipv6.conf.all.accept_redirects", value: "0" }
+    - { key: "net.ipv6.conf.default.accept_redirects", value: "0" }
+    # Don't send ICMP redirects
+    - { key: "net.ipv4.conf.all.send_redirects", value: "0" }
+    - { key: "net.ipv4.conf.default.send_redirects", value: "0" }
+    # Ignore broadcast pings
+    - { key: "net.ipv4.icmp_echo_ignore_broadcasts", value: "1" }
+    # Protect against SYN flood
+    - { key: "net.ipv4.tcp_syncookies", value: "1" }
+    # Log martian packets
+    - { key: "net.ipv4.conf.all.log_martians", value: "1" }
 
 # ------------------------------------------------------------------------------
 # Fail2Ban
@@ -99,7 +145,7 @@
 
       [sshd]
       enabled = true
-      port = ssh
+      port = {{ ssh_port | default(22) }}
       filter = sshd
       maxretry = 3
   notify: Restart fail2ban
@@ -111,13 +157,41 @@
     state: started
 
 # ------------------------------------------------------------------------------
+# Audit Logging
+# ------------------------------------------------------------------------------
+
+- name: Configure auditd rules
+  ansible.builtin.copy:
+    dest: /etc/audit/rules.d/h-kube.rules
+    mode: "0640"
+    content: |
+      # H-Kube audit rules
+      # Log all commands run as root
+      -a always,exit -F arch=b64 -F euid=0 -S execve -k root_commands
+      # Log sudo usage
+      -w /etc/sudoers -p wa -k sudoers
+      -w /etc/sudoers.d/ -p wa -k sudoers
+      # Log SSH config changes
+      -w /etc/ssh/sshd_config -p wa -k sshd_config
+      # Log user/group changes
+      -w /etc/passwd -p wa -k identity
+      -w /etc/group -p wa -k identity
+  notify: Restart auditd
+
+- name: Enable and start auditd
+  ansible.builtin.systemd:
+    name: auditd
+    enabled: true
+    state: started
+
+# ------------------------------------------------------------------------------
 # UFW Firewall
 # ------------------------------------------------------------------------------
 
-- name: Allow SSH through UFW
+- name: Rate limit SSH connections
   community.general.ufw:
-    rule: allow
-    port: "22"
+    rule: limit
+    port: "{{ ssh_port | default(22) }}"
     proto: tcp
 
 - name: Set UFW default deny incoming
@@ -170,4 +244,3 @@
       APT::Periodic::Update-Package-Lists "1";
       APT::Periodic::Unattended-Upgrade "1";
       APT::Periodic::AutocleanInterval "7";
-
