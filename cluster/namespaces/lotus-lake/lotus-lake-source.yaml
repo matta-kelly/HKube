@@ -8,7 +8,7 @@ apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
   name: lotus-lake
-  namespace: flux-system
+  namespace: lotus-lake
 spec:
   interval: 5m
   url: https://github.com/matta-kelly/lotus-lake

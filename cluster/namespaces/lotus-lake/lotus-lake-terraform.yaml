@@ -16,7 +16,7 @@ spec:
   sourceRef:
     kind: GitRepository
     name: lotus-lake
-    namespace: flux-system
+    namespace: lotus-lake
   varsFrom:
     - kind: Secret
       name: lotus-lake-terraform-vars
