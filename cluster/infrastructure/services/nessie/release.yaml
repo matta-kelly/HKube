@@ -31,7 +31,7 @@ spec:
 
   # Wait for database to be ready
   dependsOn:
-    - name: cnpg
+    - name: cloudnative-pg
       namespace: cnpg-system
 
   values:

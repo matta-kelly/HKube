@@ -30,7 +30,7 @@ spec:
       retries: 3
 
   dependsOn:
-    - name: cnpg
+    - name: cloudnative-pg
       namespace: cnpg-system
 
   values:
