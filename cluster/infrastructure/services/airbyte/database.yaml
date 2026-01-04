@@ -34,6 +34,7 @@ spec:
       database: airbyte
       owner: airbyte
       postInitApplicationSQL:
+        - ALTER USER airbyte CREATEDB
         - CREATE DATABASE temporal OWNER airbyte
         - CREATE DATABASE temporal_visibility OWNER airbyte
 
