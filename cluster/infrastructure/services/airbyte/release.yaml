@@ -76,12 +76,16 @@ spec:
             memory: 8Gi
 
     # -------------------------------------------------------------------------
-    # Disable bundled dependencies and global ingress
+    # Disable bundled dependencies (we use external CNPG + SeaweedFS)
+    # Disable chart ingress (we manage our own ingress.yaml)
     # -------------------------------------------------------------------------
     postgresql:
       enabled: false
 
     minio:
+      enabled: false
+
+    ingress:
       enabled: false
 
     # -------------------------------------------------------------------------
