@@ -58,9 +58,11 @@ spec:
           endpoint: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
           authenticationType: credentials
           accessKeyId:
-            password: admin
+            secretName: airbyte-storage-creds
+            secretKey: S3_ACCESS_KEY
           secretAccessKey:
-            password: admin
+            secretName: airbyte-storage-creds
+            secretKey: S3_SECRET_KEY
           region: us-east-1
 
       jobs:
