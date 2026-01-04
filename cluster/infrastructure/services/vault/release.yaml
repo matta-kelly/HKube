@@ -53,8 +53,14 @@ spec:
           }
 
           storage "postgresql" {
-            connection_url = "postgres://vault@vault-db-rw.vault.svc.cluster.local:5432/vault?sslmode=disable"
+            connection_url = "env://VAULT_PG_CONNECTION_URL"
           }
+
+      # Inject DB credentials from CNPG secret
+      extraSecretEnvironmentVars:
+        - envName: VAULT_PG_CONNECTION_URL
+          secretName: vault-db-app
+          secretKey: uri
 
       # Run on home nodes
       nodeSelector:
