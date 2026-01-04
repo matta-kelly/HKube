@@ -1,16 +1,11 @@
 # ==============================================================================
-# Landl Namespace Kustomization
+# Lotus Lake Namespace Kustomization
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - namespace.yaml
-  - source.yaml
-  - entity-vars.yaml
-  - plane-secrets.yaml
-  - landl.yaml
-  # Lotus Lake (data platform)
   - lotus-lake-source.yaml
   - lotus-lake-secrets.yaml
   - lotus-lake-terraform.yaml

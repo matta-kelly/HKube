@@ -1,17 +1,17 @@
 # ==============================================================================
-# Authentik ForwardAuth Middleware for Lotus & Luna (landl)
+# Authentik ForwardAuth Middleware for Lotus Lake
 # ==============================================================================
-# Separate auth domain for landl services - allows different user groups
+# Separate auth domain for lotus-lake services - allows different user groups
 # than the main kube/homelab services.
 #
-# Usage: Add this annotation to any landl Ingress:
-#   traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-landl@kubernetescrd
+# Usage: Add this annotation to any lotus-lake Ingress:
+#   traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-lotus-lake@kubernetescrd
 # ==============================================================================
 
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: authentik-landl
+  name: authentik-lotus-lake
   namespace: kube-system
 spec:
   forwardAuth:

@@ -73,11 +73,11 @@ data:
             siteMonitor: https://vaultwarden.homenetes.datamountainsolutions.com
 
     - Clients:
-        - Plane (LandL):
-            icon: plane.png
-            href: https://plane.landl.datamountainsolutions.com
-            description: Project Management
-            siteMonitor: https://plane.landl.datamountainsolutions.com
+        - Airbyte (Lotus Lake):
+            icon: airbyte.png
+            href: https://airbyte.landl.datamountainsolutions.com
+            description: Data Integration
+            siteMonitor: https://airbyte.landl.datamountainsolutions.com
 
   # ---------------------------------------------------------------------------
   # Widgets - Top bar information

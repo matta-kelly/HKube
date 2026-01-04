@@ -12,5 +12,4 @@ resources:
   - homepage
   - kube-prometheus-stack
   - nessie
-  - plane
   - seaweedfs

@@ -8,7 +8,7 @@ apiVersion: infra.contrib.fluxcd.io/v1alpha2
 kind: Terraform
 metadata:
   name: lotus-lake-airbyte
-  namespace: landl
+  namespace: lotus-lake
 spec:
   interval: 10m
   approvePlan: auto
