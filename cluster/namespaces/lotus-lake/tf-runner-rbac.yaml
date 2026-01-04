@@ -1,0 +1,35 @@
+# ==============================================================================
+# Terraform Runner RBAC for Lotus Lake
+# ==============================================================================
+# Service account and permissions for tofu-controller to run Terraform
+# ==============================================================================
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tf-runner
+  namespace: lotus-lake
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tf-runner
+  namespace: lotus-lake
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tf-runner
+  namespace: lotus-lake
+subjects:
+  - kind: ServiceAccount
+    name: tf-runner
+    namespace: lotus-lake
+roleRef:
+  kind: Role
+  name: tf-runner
+  apiGroup: rbac.authorization.k8s.io
