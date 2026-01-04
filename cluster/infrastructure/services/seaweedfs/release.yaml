@@ -31,19 +31,20 @@ spec:
 
   values:
     # -------------------------------------------------------------------------
-    # Master - manages topology, runs at home
+    # Master - manages topology, runs on gpa-server (stable always-on)
+    # defaultReplication "001" = replicate once in same rack (both home nodes)
     # -------------------------------------------------------------------------
     master:
       enabled: true
       replicas: 1
+      defaultReplication: "001"
       nodeSelector: |
         node.h-kube.io/location: home
       affinity: |
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
                   - key: kubernetes.io/hostname
                     operator: In
                     values:
@@ -54,24 +55,21 @@ spec:
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # Volume - stores actual data, runs at home on bulk storage
-    # Future: replicas: 2 for redundancy across gpa-server + monkeybusiness
+    # Volume - stores actual data on BOTH home nodes for redundancy
+    # Anti-affinity ensures one volume per node (gpa-server + monkeybusiness)
     # -------------------------------------------------------------------------
     volume:
       enabled: true
-      replicas: 1
+      replicas: 2
       nodeSelector: |
         node.h-kube.io/location: home
       affinity: |
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - monkeybusiness
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: volume
+              topologyKey: kubernetes.io/hostname
       dataDirs:
         - name: data1
           type: "persistentVolumeClaim"
@@ -82,23 +80,13 @@ spec:
       dataCenter: default
 
     # -------------------------------------------------------------------------
-    # Filer - S3 API endpoint, runs at home
+    # Filer - S3 API + metadata, runs at home (can be on either node)
     # -------------------------------------------------------------------------
     filer:
       enabled: true
       replicas: 1
       nodeSelector: |
         node.h-kube.io/location: home
-      affinity: |
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - gpa-server
       s3:
         enabled: true
         port: 8333
@@ -109,22 +97,12 @@ spec:
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # S3 Gateway - runs at home
+    # S3 Gateway - runs at home (can be on either node)
     # -------------------------------------------------------------------------
     s3:
       enabled: true
       nodeSelector: |
         node.h-kube.io/location: home
-      affinity: |
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values:
-                      - gpa-server
 
     # -------------------------------------------------------------------------
     # Disable unused components
