@@ -1,16 +1,12 @@
 # ==============================================================================
-# Infrastructure Services
+# Nessie Kustomization
 # ==============================================================================
-# These may depend on CRDs from controllers (e.g., authentik needs cnpg)
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - airbyte
-  - authentik
-  - headscale-ui
-  - homepage
-  - kube-prometheus-stack
-  - nessie
-  - plane
-  - seaweedfs
+  - namespace.yaml
+  - repository.yaml
+  - database.yaml
+  - backup-secret.yaml
+  - release.yaml

@@ -1,0 +1,12 @@
+# ==============================================================================
+# Nessie Helm Repository
+# ==============================================================================
+
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: nessie
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://charts.projectnessie.org

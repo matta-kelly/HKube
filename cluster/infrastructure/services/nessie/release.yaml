@@ -1,0 +1,49 @@
+# ==============================================================================
+# Nessie Helm Release
+# ==============================================================================
+# Iceberg catalog with Git-like versioning
+# Uses JDBC backend with CloudNativePG PostgreSQL
+# ==============================================================================
+
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nessie
+  namespace: nessie
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: nessie
+      version: "0.x"
+      sourceRef:
+        kind: HelmRepository
+        name: nessie
+        namespace: flux-system
+
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+
+  # Wait for database to be ready
+  dependsOn:
+    - name: cnpg
+      namespace: cnpg-system
+
+  values:
+    versionStoreType: JDBC
+
+    jdbc:
+      jdbcUrl: jdbc:postgresql://nessie-db-rw.nessie.svc.cluster.local:5432/nessie
+      secret:
+        name: nessie-db-app
+        username: username
+        password: password
+
+    # Lightweight service, runs on control plane
+    nodeSelector:
+      node.h-kube.io/role: server

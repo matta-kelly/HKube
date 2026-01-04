@@ -1,0 +1,145 @@
+# ==============================================================================
+# Airbyte Helm Release (V2)
+# ==============================================================================
+# Data integration platform - ELT connectors
+# Uses CNPG PostgreSQL, logs to SeaweedFS
+# ==============================================================================
+
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: airbyte
+  namespace: airbyte
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: airbyte
+      version: "2.x"
+      sourceRef:
+        kind: HelmRepository
+        name: airbyte
+        namespace: flux-system
+
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+
+  dependsOn:
+    - name: cnpg
+      namespace: cnpg-system
+
+  values:
+    # -------------------------------------------------------------------------
+    # Global settings
+    # -------------------------------------------------------------------------
+    global:
+      database:
+        type: external
+        host: airbyte-db-rw.airbyte.svc.cluster.local
+        port: 5432
+        database: airbyte
+        user: airbyte
+        secretName: airbyte-db-app
+        secretKey: password
+
+      storage:
+        type: s3
+        bucket: airbyte-logs
+        s3:
+          endpoint: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+          accessKeyId: admin
+          secretAccessKey: admin
+          region: us-east-1
+
+      jobs:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 4
+            memory: 8Gi
+
+    # -------------------------------------------------------------------------
+    # Disable bundled dependencies (using CNPG + external storage)
+    # -------------------------------------------------------------------------
+    postgresql:
+      enabled: false
+
+    minio:
+      enabled: false
+
+    # -------------------------------------------------------------------------
+    # Server - lightweight, runs on control plane
+    # -------------------------------------------------------------------------
+    server:
+      nodeSelector:
+        node.h-kube.io/role: server
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 1
+          memory: 2Gi
+
+    # -------------------------------------------------------------------------
+    # Webapp - lightweight, runs on control plane
+    # -------------------------------------------------------------------------
+    webapp:
+      nodeSelector:
+        node.h-kube.io/role: server
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+      ingress:
+        enabled: true
+        className: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        hosts:
+          - host: airbyte.${CLUSTER_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - secretName: airbyte-tls
+            hosts:
+              - airbyte.${CLUSTER_DOMAIN}
+
+    # -------------------------------------------------------------------------
+    # Worker - does heavy lifting, runs on bulk storage nodes
+    # -------------------------------------------------------------------------
+    worker:
+      nodeSelector:
+        storage.h-kube.io/bulk: "true"
+      resources:
+        requests:
+          cpu: 500m
+          memory: 1Gi
+        limits:
+          cpu: 2
+          memory: 4Gi
+
+    # -------------------------------------------------------------------------
+    # Workload launcher - runs on bulk storage nodes
+    # -------------------------------------------------------------------------
+    workloadLauncher:
+      nodeSelector:
+        storage.h-kube.io/bulk: "true"
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 1
+          memory: 2Gi

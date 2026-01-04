@@ -1,0 +1,12 @@
+# ==============================================================================
+# Airbyte Helm Repository (V2)
+# ==============================================================================
+
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: airbyte
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://airbytehq.github.io/charts

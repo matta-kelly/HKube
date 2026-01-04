@@ -1,0 +1,55 @@
+# ==============================================================================
+# Airbyte PostgreSQL Database (CloudNativePG)
+# ==============================================================================
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: airbyte-db
+  namespace: airbyte
+spec:
+  instances: 1
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.2
+
+  affinity:
+    nodeSelector:
+      storage.h-kube.io/bulk: "true"
+
+  storage:
+    size: 10Gi
+    storageClass: local-path
+
+  bootstrap:
+    initdb:
+      database: airbyte
+      owner: airbyte
+
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://cnpg-backups/airbyte
+      endpointURL: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+      s3Credentials:
+        accessKeyId:
+          name: airbyte-db-backup-creds
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: airbyte-db-backup-creds
+          key: SECRET_ACCESS_KEY
+    retentionPolicy: "7d"
+
+---
+# ==============================================================================
+# Scheduled Backup
+# ==============================================================================
+
+apiVersion: postgresql.cnpg.io/v1
+kind: ScheduledBackup
+metadata:
+  name: airbyte-db-backup
+  namespace: airbyte
+spec:
+  schedule: "0 0 * * *"
+  backupOwnerReference: self
+  cluster:
+    name: airbyte-db
