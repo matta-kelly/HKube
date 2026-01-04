@@ -24,6 +24,9 @@ spec:
     initdb:
       database: airbyte
       owner: airbyte
+      postInitApplicationSQL:
+        - CREATE DATABASE temporal OWNER airbyte
+        - CREATE DATABASE temporal_visibility OWNER airbyte
 
   backup:
     barmanObjectStore:
