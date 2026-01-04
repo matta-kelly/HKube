@@ -88,10 +88,14 @@ spec:
           cert-manager.io/cluster-issuer: letsencrypt-prod
         hosts:
           - auth.${CLUSTER_DOMAIN}
+          - auth.landl.datamountainsolutions.com
         tls:
           - secretName: authentik-tls
             hosts:
               - auth.${CLUSTER_DOMAIN}
+          - secretName: authentik-landl-tls
+            hosts:
+              - auth.landl.datamountainsolutions.com
 
     # -------------------------------------------------------------------------
     # Worker - run on nodes with bulk storage

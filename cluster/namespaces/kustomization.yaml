@@ -9,5 +9,5 @@ kind: Kustomization
 resources:
   - homenetes
   - landl
-  - quant
+  # - quant       # TODO: Enable when ready to deploy
   # - lotus-lake  # TODO: Enable when ready
