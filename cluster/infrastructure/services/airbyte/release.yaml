@@ -49,11 +49,18 @@ spec:
 
       storage:
         type: s3
-        bucket: airbyte-logs
+        bucket:
+          log: airbyte-storage
+          state: airbyte-storage
+          workloadOutput: airbyte-storage
+          activityPayload: airbyte-storage
         s3:
           endpoint: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
-          accessKeyId: admin
-          secretAccessKey: admin
+          authenticationType: credentials
+          accessKeyId:
+            password: admin
+          secretAccessKey:
+            password: admin
           region: us-east-1
 
       jobs:
