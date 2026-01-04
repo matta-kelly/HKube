@@ -1,5 +1,5 @@
 # ==============================================================================
-# Airbyte Kustomization
+# Vault Kustomization
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -7,9 +7,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - repository.yaml
-  - database.yaml
   - backup-secret.yaml
-  - storage-secret.yaml
-  - vault-token-secret.yaml
+  - database.yaml
   - release.yaml
   - ingress.yaml

@@ -32,12 +32,24 @@ spec:
   dependsOn:
     - name: cloudnative-pg
       namespace: cnpg-system
+    - name: vault
+      namespace: vault
 
   values:
     # -------------------------------------------------------------------------
     # Global settings
     # -------------------------------------------------------------------------
     global:
+      # Secrets Manager - use Vault instead of buggy DB storage
+      secretsManager:
+        type: VAULT
+        vault:
+          address: http://vault.vault.svc.cluster.local:8200
+          prefix: airbyte
+          authToken:
+            secretName: airbyte-vault-token
+            secretKey: token
+
       database:
         type: external
         host: airbyte-db-rw.airbyte.svc.cluster.local
