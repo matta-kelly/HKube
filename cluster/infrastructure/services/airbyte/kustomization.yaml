@@ -10,5 +10,4 @@ resources:
   - database.yaml
   - backup-secret.yaml
   - storage-secret.yaml
-  - db-config-secret.yaml
   - release.yaml

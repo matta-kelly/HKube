@@ -44,9 +44,9 @@ spec:
         port: 5432
         name: airbyte
         user: airbyte
-        secretName: airbyte-db-config
-        userSecretKey: DATABASE_USER
-        passwordSecretKey: DATABASE_PASSWORD
+        secretName: airbyte-db-app
+        userSecretKey: username
+        passwordSecretKey: password
 
       storage:
         type: s3
