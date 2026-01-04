@@ -76,12 +76,16 @@ spec:
             memory: 8Gi
 
     # -------------------------------------------------------------------------
-    # Disable bundled dependencies (using CNPG + external storage)
+    # Disable bundled dependencies and global ingress
     # -------------------------------------------------------------------------
     postgresql:
       enabled: false
 
     minio:
+      enabled: false
+
+    # Disable global ingress (we use webapp.ingress instead)
+    ingress:
       enabled: false
 
     # -------------------------------------------------------------------------
