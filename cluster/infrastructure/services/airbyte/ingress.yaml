@@ -1,0 +1,31 @@
+# ==============================================================================
+# Airbyte Ingress
+# ==============================================================================
+# Routes airbyte.landl.datamountainsolutions.com to airbyte-server
+# Separate from HelmRelease to isolate ingress issues from app health
+# ==============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: airbyte
+  namespace: airbyte
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: airbyte.landl.datamountainsolutions.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: airbyte-airbyte-server-svc
+                port:
+                  number: 8001
+  tls:
+    - hosts:
+        - airbyte.landl.datamountainsolutions.com
+      secretName: airbyte-tls

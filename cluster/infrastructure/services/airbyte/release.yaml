@@ -84,23 +84,6 @@ spec:
     minio:
       enabled: false
 
-    # Ingress for Airbyte UI (V2 chart uses top-level ingress, not webapp.ingress)
-    ingress:
-      enabled: true
-      className: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-prod
-      hosts:
-        - host: airbyte.${CLUSTER_DOMAIN}
-          paths:
-            - path: /
-              pathType: Prefix
-              backend: server
-      tls:
-        - secretName: airbyte-tls
-          hosts:
-            - airbyte.${CLUSTER_DOMAIN}
-
     # -------------------------------------------------------------------------
     # Server - API server, runs at home
     # -------------------------------------------------------------------------

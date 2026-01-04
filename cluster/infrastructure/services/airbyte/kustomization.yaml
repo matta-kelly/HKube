@@ -11,3 +11,4 @@ resources:
   - backup-secret.yaml
   - storage-secret.yaml
   - release.yaml
+  - ingress.yaml
