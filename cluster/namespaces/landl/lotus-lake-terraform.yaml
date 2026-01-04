@@ -1,0 +1,75 @@
+# ==============================================================================
+# Lotus Lake Terraform Resource
+# ==============================================================================
+# Runs Terraform for Airbyte configuration via tofu-controller
+# ==============================================================================
+
+apiVersion: infra.contrib.fluxcd.io/v1alpha2
+kind: Terraform
+metadata:
+  name: lotus-lake-airbyte
+  namespace: landl
+spec:
+  interval: 10m
+  approvePlan: auto
+  path: ./orchestration/resources/airbyte/terraform
+  sourceRef:
+    kind: GitRepository
+    name: lotus-lake
+    namespace: flux-system
+  varsFrom:
+    - kind: Secret
+      name: lotus-lake-terraform-vars
+  runnerPodTemplate:
+    spec:
+      env:
+        - name: TF_VAR_workspace_id
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: workspace_id
+        - name: TF_VAR_airbyte_username
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: airbyte_username
+        - name: TF_VAR_airbyte_password
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: airbyte_password
+        - name: TF_VAR_shopify_store
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: shopify_store
+        - name: TF_VAR_shopify_api_password
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: shopify_api_password
+        - name: TF_VAR_klaviyo_api_key
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: klaviyo_api_key
+        - name: TF_VAR_minio_user
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: minio_user
+        - name: TF_VAR_minio_password
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: minio_password
+        - name: TF_VAR_minio_endpoint
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: minio_endpoint
+        - name: TF_VAR_nessie_endpoint
+          valueFrom:
+            secretKeyRef:
+              name: lotus-lake-terraform-vars
+              key: nessie_endpoint

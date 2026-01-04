@@ -1,12 +1,9 @@
 # ==============================================================================
-# Infrastructure Controllers (Base Operators)
+# Tofu Controller Kustomization
 # ==============================================================================
-# These install first - they provide CRDs for other components
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - cert-manager
-  - cloudnative-pg
-  - traefik
-  - tofu-controller
+  - repository.yaml
+  - release.yaml

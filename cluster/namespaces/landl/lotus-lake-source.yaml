@@ -1,0 +1,19 @@
+# ==============================================================================
+# Lotus Lake GitRepository
+# ==============================================================================
+# Source for lotus-lake data platform - Flux watches this repo for changes
+# ==============================================================================
+
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: lotus-lake
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/matta-kelly/lotus-lake
+  ref:
+    branch: main
+  # Uncomment if repo is private:
+  # secretRef:
+  #   name: lotus-lake-git-auth

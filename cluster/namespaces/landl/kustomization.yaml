@@ -10,3 +10,7 @@ resources:
   - entity-vars.yaml
   - plane-secrets.yaml
   - landl.yaml
+  # Lotus Lake (data platform)
+  - lotus-lake-source.yaml
+  - lotus-lake-secrets.yaml
+  - lotus-lake-terraform.yaml
