@@ -40,7 +40,7 @@ spec:
     server:
       enabled: true
 
-      # Single instance (no HA for now)
+      # Single instance with Raft storage (built-in, no external DB needed)
       standalone:
         enabled: true
         config: |
@@ -52,15 +52,9 @@ spec:
             cluster_address = "[::]:8201"
           }
 
-          storage "postgresql" {
-            connection_url = "env://VAULT_PG_CONNECTION_URL"
+          storage "raft" {
+            path = "/vault/data"
           }
-
-      # Inject DB credentials from CNPG secret
-      extraSecretEnvironmentVars:
-        - envName: VAULT_PG_CONNECTION_URL
-          secretName: vault-db-app
-          secretKey: uri
 
       # Run on home nodes
       nodeSelector:
@@ -84,11 +78,11 @@ spec:
           cpu: 500m
           memory: 512Mi
 
-      # Data storage for file-based audit logs etc
+      # Data storage - Raft data on SeaweedFS for durability
       dataStorage:
         enabled: true
         size: 1Gi
-        storageClass: local-path
+        storageClass: seaweedfs-storage
 
     # -------------------------------------------------------------------------
     # UI - enabled, ingress handled separately
