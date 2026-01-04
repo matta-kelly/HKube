@@ -44,6 +44,16 @@ spec:
         username: username
         password: password
 
-    # Lightweight service, runs on control plane
+    # Iceberg catalog - runs at home, prefers monkeybusiness
     nodeSelector:
-      node.h-kube.io/role: server
+      node.h-kube.io/location: home
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+                - key: kubernetes.io/hostname
+                  operator: In
+                  values:
+                    - monkeybusiness

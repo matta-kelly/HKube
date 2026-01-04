@@ -14,7 +14,16 @@ spec:
 
   affinity:
     nodeSelector:
-      storage.h-kube.io/bulk: "true"
+      node.h-kube.io/location: home
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                  - monkeybusiness
 
   storage:
     size: 5Gi

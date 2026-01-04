@@ -85,11 +85,20 @@ spec:
       enabled: false
 
     # -------------------------------------------------------------------------
-    # Server - lightweight, runs on control plane
+    # Server - API server, runs at home
     # -------------------------------------------------------------------------
     server:
       nodeSelector:
-        node.h-kube.io/role: server
+        node.h-kube.io/location: home
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["monkeybusiness"]
       resources:
         requests:
           cpu: 250m
@@ -99,11 +108,20 @@ spec:
           memory: 2Gi
 
     # -------------------------------------------------------------------------
-    # Webapp - lightweight, runs on control plane
+    # Webapp - UI, runs at home
     # -------------------------------------------------------------------------
     webapp:
       nodeSelector:
-        node.h-kube.io/role: server
+        node.h-kube.io/location: home
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["monkeybusiness"]
       resources:
         requests:
           cpu: 100m
@@ -127,11 +145,20 @@ spec:
               - airbyte.${CLUSTER_DOMAIN}
 
     # -------------------------------------------------------------------------
-    # Worker - does heavy lifting, runs on bulk storage nodes
+    # Worker - heavy lifting, prefers monkeybusiness (more RAM)
     # -------------------------------------------------------------------------
     worker:
       nodeSelector:
-        storage.h-kube.io/bulk: "true"
+        node.h-kube.io/location: home
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["monkeybusiness"]
       resources:
         requests:
           cpu: 500m
@@ -141,11 +168,20 @@ spec:
           memory: 4Gi
 
     # -------------------------------------------------------------------------
-    # Workload launcher - runs on bulk storage nodes
+    # Workload launcher - prefers monkeybusiness (more RAM)
     # -------------------------------------------------------------------------
     workloadLauncher:
       nodeSelector:
-        storage.h-kube.io/bulk: "true"
+        node.h-kube.io/location: home
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values: ["monkeybusiness"]
       resources:
         requests:
           cpu: 250m

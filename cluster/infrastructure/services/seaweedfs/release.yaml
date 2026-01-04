@@ -31,26 +31,47 @@ spec:
 
   values:
     # -------------------------------------------------------------------------
-    # Master - manages topology (lightweight, runs on control plane)
+    # Master - manages topology, runs at home
     # -------------------------------------------------------------------------
     master:
       enabled: true
       replicas: 1
       nodeSelector: |
-        node.h-kube.io/role: server
+        node.h-kube.io/location: home
+      affinity: |
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - gpa-server
       data:
         type: persistentVolumeClaim
         size: 1Gi
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # Volume - stores actual data (runs on nodes with bulk storage)
+    # Volume - stores actual data, runs at home on bulk storage
+    # Future: replicas: 2 for redundancy across gpa-server + monkeybusiness
     # -------------------------------------------------------------------------
     volume:
       enabled: true
       replicas: 1
       nodeSelector: |
-        storage.h-kube.io/bulk: "true"
+        node.h-kube.io/location: home
+      affinity: |
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - monkeybusiness
       dataDirs:
         - name: data1
           type: "persistentVolumeClaim"
@@ -61,13 +82,23 @@ spec:
       dataCenter: default
 
     # -------------------------------------------------------------------------
-    # Filer - S3 API endpoint (runs on control plane, lightweight)
+    # Filer - S3 API endpoint, runs at home
     # -------------------------------------------------------------------------
     filer:
       enabled: true
       replicas: 1
       nodeSelector: |
-        node.h-kube.io/role: server
+        node.h-kube.io/location: home
+      affinity: |
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - gpa-server
       s3:
         enabled: true
         port: 8333
@@ -78,12 +109,22 @@ spec:
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # S3 Gateway
+    # S3 Gateway - runs at home
     # -------------------------------------------------------------------------
     s3:
       enabled: true
       nodeSelector: |
-        node.h-kube.io/role: server
+        node.h-kube.io/location: home
+      affinity: |
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              preference:
+                matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - gpa-server
 
     # -------------------------------------------------------------------------
     # Disable unused components
