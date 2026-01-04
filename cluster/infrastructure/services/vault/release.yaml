@@ -2,7 +2,7 @@
 # Vault Helm Release
 # ==============================================================================
 # HashiCorp Vault - Secrets management
-# Single instance, manual unseal, PostgreSQL storage via CNPG
+# Single instance, manual unseal, Raft storage on SeaweedFS
 # ==============================================================================
 
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -28,10 +28,6 @@ spec:
   upgrade:
     remediation:
       retries: 3
-
-  dependsOn:
-    - name: cloudnative-pg
-      namespace: cnpg-system
 
   values:
     # -------------------------------------------------------------------------
