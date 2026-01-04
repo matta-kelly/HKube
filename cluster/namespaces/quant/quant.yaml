@@ -1,0 +1,33 @@
+# ==============================================================================
+# Quant Flux Kustomization
+# ==============================================================================
+# Deploys financial infrastructure from the quant repo into the quant namespace
+# Depends on infrastructure-services (CNPG, Traefik, etc.)
+# ==============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: quant
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: quant
+  path: ./
+  prune: true
+  wait: true
+  targetNamespace: quant
+  dependsOn:
+    - name: infrastructure-services
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars

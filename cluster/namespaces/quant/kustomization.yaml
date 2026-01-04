@@ -1,13 +1,11 @@
 # ==============================================================================
-# Application Namespaces
-# ==============================================================================
-# External application repos deployed via Flux
+# Quant Namespace Kustomization
 # ==============================================================================
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - homenetes
-  - landl
-  - quant
-  # - lotus-lake  # TODO: Enable when ready
+  - namespace.yaml
+  - source.yaml
+  - quant.yaml
+  # - quant-secrets.yaml  # TODO: Add IBKR credentials (SOPS encrypted)

@@ -1,13 +1,12 @@
 # ==============================================================================
-# Application Namespaces
+# Quant Namespace
 # ==============================================================================
-# External application repos deployed via Flux
+# Financial infrastructure - IBKR connector, market data, portfolio tracking
 # ==============================================================================
 
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - homenetes
-  - landl
-  - quant
-  # - lotus-lake  # TODO: Enable when ready
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quant
+  labels:
+    name: quant
