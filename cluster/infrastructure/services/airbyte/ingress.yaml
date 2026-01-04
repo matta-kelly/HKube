@@ -12,7 +12,7 @@ metadata:
   namespace: airbyte
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-auth@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: kube-system-authentik-landl@kubernetescrd
 spec:
   ingressClassName: traefik
   rules:
