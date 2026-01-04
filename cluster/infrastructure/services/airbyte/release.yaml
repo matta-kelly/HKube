@@ -42,10 +42,10 @@ spec:
         type: external
         host: airbyte-db-rw.airbyte.svc.cluster.local
         port: 5432
-        database: airbyte
+        name: airbyte
         user: airbyte
         secretName: airbyte-db-app
-        secretKey: password
+        passwordSecretKey: password
 
       storage:
         type: s3
