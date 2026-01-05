@@ -93,9 +93,10 @@ spec:
     # -------------------------------------------------------------------------
     s3:
       enabled: true
+      enableAuth: true
+      existingConfigSecret: seaweedfs-s3-config
       nodeSelector: |
         node.h-kube.io/role: server
-      existingConfigSecret: seaweedfs-s3-config
 
     # -------------------------------------------------------------------------
     # Disable unused components
