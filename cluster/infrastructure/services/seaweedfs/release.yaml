@@ -86,7 +86,7 @@ spec:
       enabled: true
       replicas: 1
       nodeSelector: |
-        node.h-kube.io/location: home
+        node.h-kube.io/role: server
       s3:
         enabled: true
         port: 8333
