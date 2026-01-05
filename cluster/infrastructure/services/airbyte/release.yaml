@@ -2,7 +2,7 @@
 # Airbyte Helm Release (V2)
 # ==============================================================================
 # Data integration platform - ELT connectors
-# Uses CNPG PostgreSQL, logs to SeaweedFS
+# Uses CNPG PostgreSQL, built-in Minio for internal storage
 # ==============================================================================
 
 apiVersion: helm.toolkit.fluxcd.io/v2
@@ -32,24 +32,12 @@ spec:
   dependsOn:
     - name: cloudnative-pg
       namespace: cnpg-system
-    - name: vault
-      namespace: vault
 
   values:
     # -------------------------------------------------------------------------
     # Global settings
     # -------------------------------------------------------------------------
     global:
-      # Secrets Manager - use Vault instead of buggy DB storage
-      secretsManager:
-        type: VAULT
-        vault:
-          address: http://vault.vault.svc.cluster.local:8200
-          prefix: "airbyte/"
-          authToken:
-            secretName: airbyte-vault-token
-            secretKey: token
-
       database:
         type: external
         host: airbyte-db-rw.airbyte.svc.cluster.local
@@ -59,24 +47,6 @@ spec:
         secretName: airbyte-db-app
         userSecretKey: username
         passwordSecretKey: password
-
-      storage:
-        type: s3
-        bucket:
-          log: airbyte-storage
-          state: airbyte-storage
-          workloadOutput: airbyte-storage
-          activityPayload: airbyte-storage
-        s3:
-          endpoint: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
-          authenticationType: credentials
-          accessKeyId:
-            secretName: airbyte-storage-creds
-            secretKey: S3_ACCESS_KEY
-          secretAccessKey:
-            secretName: airbyte-storage-creds
-            secretKey: S3_SECRET_KEY
-          region: us-east-1
 
       jobs:
         resources:
@@ -95,7 +65,9 @@ spec:
       enabled: false
 
     minio:
-      enabled: false
+      enabled: true
+      nodeSelector:
+        node.h-kube.io/location: home
 
     ingress:
       enabled: false
