@@ -98,11 +98,27 @@ spec:
 
     # -------------------------------------------------------------------------
     # S3 Gateway - runs at home (can be on either node)
+    # Authentication required for Airbyte S3 destination (sends signed requests)
     # -------------------------------------------------------------------------
     s3:
       enabled: true
       nodeSelector: |
         node.h-kube.io/location: home
+      config: |
+        {
+          "identities": [
+            {
+              "name": "minio",
+              "credentials": [
+                {
+                  "accessKey": "minio",
+                  "secretKey": "minio123"
+                }
+              ],
+              "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+            }
+          ]
+        }
 
     # -------------------------------------------------------------------------
     # Disable unused components
