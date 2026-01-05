@@ -31,7 +31,7 @@ spec:
 
   values:
     # -------------------------------------------------------------------------
-    # Master - manages topology, runs on gpa-server (stable always-on)
+    # Master - manages topology, runs on control plane (stable, always-on)
     # defaultReplication "001" = replicate once in same rack (both home nodes)
     # -------------------------------------------------------------------------
     master:
@@ -39,7 +39,7 @@ spec:
       replicas: 1
       defaultReplication: "001"
       nodeSelector: |
-        node.h-kube.io/role: server
+        node-role.kubernetes.io/control-plane: "true"
       data:
         type: persistentVolumeClaim
         size: 1Gi
@@ -71,13 +71,13 @@ spec:
       dataCenter: default
 
     # -------------------------------------------------------------------------
-    # Filer - S3 API + metadata, runs at home (can be on either node)
+    # Filer - metadata + embedded S3, runs on control plane (stable, always-on)
     # -------------------------------------------------------------------------
     filer:
       enabled: true
       replicas: 1
       nodeSelector: |
-        node.h-kube.io/role: server
+        node-role.kubernetes.io/control-plane: "true"
       s3:
         enabled: true
         port: 8333
@@ -88,7 +88,7 @@ spec:
         storageClass: local-path
 
     # -------------------------------------------------------------------------
-    # S3 Gateway - runs at home (can be on either node)
+    # S3 Gateway - runs on control plane (stable, always-on)
     # Authentication required for Airbyte S3 destination (sends signed requests)
     # -------------------------------------------------------------------------
     s3:
@@ -96,7 +96,7 @@ spec:
       enableAuth: true
       existingConfigSecret: seaweedfs-s3-config
       nodeSelector: |
-        node.h-kube.io/role: server
+        node-role.kubernetes.io/control-plane: "true"
 
     # -------------------------------------------------------------------------
     # Disable unused components
