@@ -7,6 +7,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - repository.yaml
+  - s3-auth-secret.yaml
   - release.yaml
   - csi-repository.yaml
   - csi-release.yaml

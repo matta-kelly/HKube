@@ -95,21 +95,7 @@ spec:
       enabled: true
       nodeSelector: |
         node.h-kube.io/role: server
-      config: |
-        {
-          "identities": [
-            {
-              "name": "minio",
-              "credentials": [
-                {
-                  "accessKey": "minio",
-                  "secretKey": "minio123"
-                }
-              ],
-              "actions": ["Admin", "Read", "Write", "List", "Tagging"]
-            }
-          ]
-        }
+      existingConfigSecret: seaweedfs-s3-config
 
     # -------------------------------------------------------------------------
     # Disable unused components
