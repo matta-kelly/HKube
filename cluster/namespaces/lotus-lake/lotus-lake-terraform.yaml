@@ -12,7 +12,8 @@ metadata:
 spec:
   interval: 10m
   approvePlan: auto
-  path: ./orchestration/resources/airbyte/terraform
+  destroyResourcesOnDeletion: true
+  path: ./orchestration/airbyte/terraform
   sourceRef:
     kind: GitRepository
     name: lotus-lake
