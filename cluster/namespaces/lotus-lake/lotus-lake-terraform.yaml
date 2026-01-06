@@ -10,7 +10,8 @@ metadata:
   name: lotus-lake-airbyte
   namespace: lotus-lake
 spec:
-  interval: 10m
+  interval: 5m
+  retryInterval: 1m
   approvePlan: auto
   destroyResourcesOnDeletion: true
   path: ./orchestration/airbyte/terraform
