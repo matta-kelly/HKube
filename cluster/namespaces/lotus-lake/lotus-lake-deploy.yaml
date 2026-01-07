@@ -1,0 +1,34 @@
+# ==============================================================================
+# Lotus Lake Deploy Kustomization
+# ==============================================================================
+# Deploys Dagster and related resources from the lotus-lake repo
+# Depends on infrastructure-services (CNPG, SeaweedFS, Airbyte, etc.)
+# ==============================================================================
+
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: lotus-lake-deploy
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: lotus-lake
+    namespace: lotus-lake
+  path: ./deploy
+  prune: true
+  wait: true
+  targetNamespace: lotus-lake
+  dependsOn:
+    - name: infrastructure-services
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars
