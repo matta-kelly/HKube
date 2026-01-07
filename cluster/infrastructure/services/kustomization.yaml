@@ -11,6 +11,5 @@ resources:
   - headscale-ui
   - homepage
   - kube-prometheus-stack
-  - nessie
   - seaweedfs
   - vault

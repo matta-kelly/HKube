@@ -19,6 +19,7 @@ spec:
     kind: GitRepository
     name: lotus-lake
     namespace: lotus-lake
+  storeReadablePlan: human
   varsFrom:
     - kind: Secret
       name: lotus-lake-terraform-vars

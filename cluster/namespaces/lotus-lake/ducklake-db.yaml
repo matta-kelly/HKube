@@ -1,12 +1,13 @@
 # ==============================================================================
-# Nessie PostgreSQL Database (CloudNativePG)
+# DuckLake PostgreSQL Database (CloudNativePG)
 # ==============================================================================
+# Metadata catalog for DuckLake - stores table schemas, file pointers, etc.
 
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: nessie-db
-  namespace: nessie
+  name: ducklake-db
+  namespace: lotus-lake
 spec:
   instances: 1
 
@@ -31,19 +32,19 @@ spec:
 
   bootstrap:
     initdb:
-      database: nessie
-      owner: nessie
+      database: ducklake
+      owner: ducklake
 
   backup:
     barmanObjectStore:
-      destinationPath: s3://cnpg-backups/nessie
+      destinationPath: s3://cnpg-backups/ducklake
       endpointURL: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
       s3Credentials:
         accessKeyId:
-          name: nessie-db-backup-creds
+          name: ducklake-db-backup-creds
           key: ACCESS_KEY_ID
         secretAccessKey:
-          name: nessie-db-backup-creds
+          name: ducklake-db-backup-creds
           key: SECRET_ACCESS_KEY
     retentionPolicy: "7d"
 
@@ -55,10 +56,10 @@ spec:
 apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
-  name: nessie-db-backup
-  namespace: nessie
+  name: ducklake-db-backup
+  namespace: lotus-lake
 spec:
   schedule: "0 0 * * *"
   backupOwnerReference: self
   cluster:
-    name: nessie-db
+    name: ducklake-db

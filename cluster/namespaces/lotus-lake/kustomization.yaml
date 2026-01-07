@@ -10,3 +10,5 @@ resources:
   - lotus-lake-source.yaml
   - lotus-lake-secrets.yaml
   - lotus-lake-terraform.yaml
+  - ducklake-db.yaml
+  - ducklake-db-backup-secret.yaml
