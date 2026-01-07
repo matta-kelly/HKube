@@ -46,10 +46,9 @@ jobs:
           kubectl get nodes
 
       # -------------------------------------------------------------------------
-      # Clean up stale HelmCharts (optional, for when sourceRef changes)
+      # Clean up stale HelmCharts (always run - prevents stuck deploys)
       # -------------------------------------------------------------------------
       - name: Clean orphaned HelmCharts
-        if: github.event.inputs.clean_helmcharts == 'true'
         run: |
           echo "Checking for HelmCharts with missing sources..."
           for chart in $(kubectl get helmchart -n flux-system -o name 2>/dev/null); do
