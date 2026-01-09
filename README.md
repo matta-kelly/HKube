@@ -79,8 +79,8 @@ nodes:
   gpa-server:
     type: home
     role: k3s-agent
-    tailscale_ip: 100.64.0.3
-    ssh_key: gpa_server
+    tailscale_ip: 100.00.0.x
+    ssh_key: key
     labels:
       location: home
       room: office
