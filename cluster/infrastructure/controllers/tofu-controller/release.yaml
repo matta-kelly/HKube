@@ -19,6 +19,14 @@ spec:
         kind: HelmRepository
         name: tofu-controller
         namespace: flux-system
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+    force: true
+  install:
+    remediation:
+      retries: 3
   values:
     # Runner uses the same image for executing Terraform
     runner:
