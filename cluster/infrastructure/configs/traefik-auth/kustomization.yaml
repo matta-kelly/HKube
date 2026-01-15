@@ -7,3 +7,4 @@ kind: Kustomization
 resources:
   - middleware.yaml
   - middleware-lotus-lake.yaml
+  - ducklake-tcp-route.yaml
