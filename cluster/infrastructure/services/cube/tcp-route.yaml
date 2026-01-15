@@ -1,0 +1,19 @@
+# ==============================================================================
+# Cube.js TCP Route (PostgreSQL Protocol)
+# ==============================================================================
+# Routes postgres:5432 traffic to Cube.js SQL API
+# ==============================================================================
+
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: cube-postgres
+  namespace: lotus-lake
+spec:
+  entryPoints:
+    - postgres
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: cube
+          port: 5432

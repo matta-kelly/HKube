@@ -8,6 +8,7 @@ kind: Kustomization
 resources:
   - airbyte
   - authentik
+  - cube
   - headscale-ui
   - homepage
   - kube-prometheus-stack
