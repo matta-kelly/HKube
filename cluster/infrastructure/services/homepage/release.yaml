@@ -86,3 +86,9 @@ spec:
       limits:
         cpu: 500m
         memory: 256Mi
+
+    # -------------------------------------------------------------------------
+    # Node placement - run on gpa-server to free control plane
+    # -------------------------------------------------------------------------
+    nodeSelector:
+      kubernetes.io/hostname: gpa-server
