@@ -140,3 +140,17 @@ spec:
         limits:
           cpu: 1
           memory: 2Gi
+
+    # -------------------------------------------------------------------------
+    # Connector Builder Server - move off control plane
+    # -------------------------------------------------------------------------
+    connectorBuilderServer:
+      nodeSelector:
+        node.h-kube.io/location: home
+
+    # -------------------------------------------------------------------------
+    # Workload API Server - move off control plane
+    # -------------------------------------------------------------------------
+    workloadApiServer:
+      nodeSelector:
+        node.h-kube.io/location: home
