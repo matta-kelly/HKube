@@ -48,22 +48,6 @@ spec:
         operator: "Exists"
         effect: "NoSchedule"
 
-    # -------------------------------------------------------------------------
-    # TCP Routing for DuckLake Postgres
-    # -------------------------------------------------------------------------
-    tcp:
-      routers:
-        ducklake:
-          entryPoints:
-            - postgres
-          rule: "HostSNI(`*`)"
-          service: ducklake
-      services:
-        ducklake:
-          loadBalancer:
-            servers:
-              - address: "ducklake-db-rw.lotus-lake.svc.cluster.local:5432"
-
     ingressRoute:
       dashboard:
         enabled: true
