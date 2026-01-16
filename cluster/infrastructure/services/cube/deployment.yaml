@@ -236,7 +236,7 @@ spec:
                   name: lotus-lake-terraform-vars
                   key: cubejs_api_secret
             # SQL API (PostgreSQL protocol)
-            - name: CUBEJS_SQL_PORT
+            - name: CUBEJS_PG_SQL_PORT
               value: "5432"
           resources:
             requests:
