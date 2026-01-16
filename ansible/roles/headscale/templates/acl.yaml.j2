@@ -1,6 +1,7 @@
 {
   "groups": {
-    "group:admin": ["mkultra@{{ domain }}"]
+    "group:admin": ["mkultra@{{ domain }}"],
+    "group:landl-users": []
   },
   "tagOwners": {
     "tag:infra": ["group:admin"],
@@ -10,8 +11,8 @@
   "acls": [
     {"action": "accept", "src": ["group:admin"], "dst": ["*:*"]},
     {"action": "accept", "src": ["tag:infra"], "dst": ["tag:infra:*"]},
+    {"action": "accept", "src": ["group:landl-users"], "dst": ["tag:infra:80", "tag:infra:443", "tag:infra:5432"]},
     {"action": "accept", "src": ["tag:client-a"], "dst": ["tag:client-a:*"]},
-    {"action": "accept", "src": ["tag:client-b"], "dst": ["tag:client-b:*"]},
-    {"action": "accept", "src": ["*"], "dst": ["*:*"]}
+    {"action": "accept", "src": ["tag:client-b"], "dst": ["tag:client-b:*"]}
   ]
 }

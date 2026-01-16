@@ -113,6 +113,12 @@ def generate_inventory(config, secrets):
             # Add headscale version for anchor
             if node.get("role") == "headscale":
                 host_entry["headscale_version"] = versions["headscale"]
+                # Add OIDC configuration
+                oidc_config = config.get("oidc", {})
+                host_entry["oidc_enabled"] = oidc_config.get("enabled", False)
+                host_entry["oidc_client_id"] = secrets.get("OIDC_CLIENT_ID", "")
+                host_entry["oidc_client_secret"] = secrets.get("OIDC_CLIENT_SECRET", "")
+                host_entry["oidc_allowed_groups"] = oidc_config.get("allowed_groups", [])
 
             # Build k3s node labels from config
             # These get applied by Ansible during bootstrap

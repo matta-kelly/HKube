@@ -33,6 +33,9 @@ spec:
             - name: postgres
               containerPort: 5432
           env:
+            # Dev mode required for single-container deployment (runs Cube Store internally)
+            - name: CUBEJS_DEV_MODE
+              value: "true"
             # Cube.js DuckDB native S3 configuration
             - name: CUBEJS_DB_TYPE
               value: "duckdb"

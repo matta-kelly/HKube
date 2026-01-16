@@ -60,13 +60,26 @@ oidc:
   issuer: "https://auth.{{ kube_domain }}/application/o/headscale/"
   client_id: "{{ oidc_client_id }}"
   client_secret_path: /etc/headscale/oidc_client_secret
-  scope: ["openid", "profile", "email"]
+  scope: ["openid", "profile", "email", "groups"]
+
+  # Only allow users in these Authentik groups to login
+  # Note: Groups scope may not exist in Authentik yet - that's OK
+  allowed_groups:
+{% for group in oidc_allowed_groups | default(['admin', 'landl-users']) %}
+    - "{{ group }}"
+{% endfor %}
+
   pkce:
     enabled: true
     method: S256
+
   strip_email_domain: true
   allowed_domains:
     - "{{ domain }}"
+    - "lotusandluna.com"
+
+  expiry: 180d
+  use_expiry_from_token: false
 {% endif %}
 
 # ACL Policy
