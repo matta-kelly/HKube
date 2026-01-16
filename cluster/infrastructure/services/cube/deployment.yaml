@@ -1,5 +1,164 @@
 # ==============================================================================
-# Cube.js Deployment
+# Cube Store Router - StatefulSet
+# ==============================================================================
+# Coordinates query execution across workers. Requires stable DNS.
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cubestore-router
+  namespace: lotus-lake
+  labels:
+    app: cubestore-router
+spec:
+  serviceName: cubestore-router
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cubestore-router
+  template:
+    metadata:
+      labels:
+        app: cubestore-router
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: monkeybusiness
+      containers:
+        - name: cubestore-router
+          image: cubejs/cubestore:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3030
+            - name: meta
+              containerPort: 9999
+            - name: status
+              containerPort: 3031
+          env:
+            # Router identity (stable DNS from StatefulSet)
+            - name: CUBESTORE_SERVER_NAME
+              value: "cubestore-router-0:9999"
+            # Ports
+            - name: CUBESTORE_HTTP_PORT
+              value: "3030"
+            - name: CUBESTORE_META_PORT
+              value: "9999"
+            - name: CUBESTORE_STATUS_PORT
+              value: "3031"
+            # Worker list
+            - name: CUBESTORE_WORKERS
+              value: "cubestore-worker-0.cubestore-worker:10001"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 3031
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 3031
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+# Headless Service for stable DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: cubestore-router
+  namespace: lotus-lake
+  labels:
+    app: cubestore-router
+spec:
+  clusterIP: None
+  selector:
+    app: cubestore-router
+  ports:
+    - name: http
+      port: 3030
+      targetPort: 3030
+    - name: meta
+      port: 9999
+      targetPort: 9999
+---
+# ==============================================================================
+# Cube Store Worker - StatefulSet
+# ==============================================================================
+# Executes queries. Requires stable DNS for router to address it.
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cubestore-worker
+  namespace: lotus-lake
+  labels:
+    app: cubestore-worker
+spec:
+  serviceName: cubestore-worker
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cubestore-worker
+  template:
+    metadata:
+      labels:
+        app: cubestore-worker
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: monkeybusiness
+      containers:
+        - name: cubestore-worker
+          image: cubejs/cubestore:latest
+          imagePullPolicy: Always
+          ports:
+            - name: worker
+              containerPort: 10001
+          env:
+            # Worker identity (stable DNS from StatefulSet)
+            - name: CUBESTORE_SERVER_NAME
+              value: "cubestore-worker-0:10001"
+            # Worker port
+            - name: CUBESTORE_WORKER_PORT
+              value: "10001"
+            # Connect to router
+            - name: CUBESTORE_META_ADDR
+              value: "cubestore-router-0.cubestore-router:9999"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+---
+# Headless Service for stable DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: cubestore-worker
+  namespace: lotus-lake
+  labels:
+    app: cubestore-worker
+spec:
+  clusterIP: None
+  selector:
+    app: cubestore-worker
+  ports:
+    - name: worker
+      port: 10001
+      targetPort: 10001
+---
+# ==============================================================================
+# Cube.js API - Deployment
 # ==============================================================================
 # Semantic layer exposing DuckLake data via PostgreSQL protocol and REST API
 # ==============================================================================
@@ -33,10 +192,17 @@ spec:
             - name: postgres
               containerPort: 5432
           env:
-            # Dev mode required for single-container deployment (runs Cube Store internally)
+            # Production mode
             - name: CUBEJS_DEV_MODE
-              value: "true"
-            # Cube.js DuckDB native S3 configuration
+              value: "false"
+            - name: CUBEJS_CACHE_AND_QUEUE_DRIVER
+              value: "cubestore"
+            # Cube Store connection
+            - name: CUBEJS_CUBESTORE_HOST
+              value: "cubestore-router"
+            - name: CUBEJS_CUBESTORE_PORT
+              value: "3030"
+            # DuckDB configuration
             - name: CUBEJS_DB_TYPE
               value: "duckdb"
             - name: CUBEJS_DB_DUCKDB_S3_ENDPOINT
@@ -55,7 +221,7 @@ spec:
               value: "false"
             - name: CUBEJS_DB_DUCKDB_S3_URL_STYLE
               value: "path"
-            # DuckLake catalog connection (used by cube.js driverFactory)
+            # DuckLake catalog connection
             - name: DUCKLAKE_DB_HOST
               value: "ducklake-db-rw.lotus-lake.svc.cluster.local"
             - name: DUCKLAKE_DB_PASSWORD
@@ -63,7 +229,7 @@ spec:
                 secretKeyRef:
                   name: ducklake-db-app
                   key: password
-            # Cube.js API secret
+            # API secret
             - name: CUBEJS_API_SECRET
               valueFrom:
                 secretKeyRef:
@@ -108,3 +274,87 @@ spec:
     - name: postgres
       port: 5432
       targetPort: 5432
+---
+# ==============================================================================
+# Cube.js Refresh Worker - Deployment
+# ==============================================================================
+# Builds pre-aggregations in the background
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cube-refresh-worker
+  namespace: lotus-lake
+  labels:
+    app: cube-refresh-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cube-refresh-worker
+  template:
+    metadata:
+      labels:
+        app: cube-refresh-worker
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: monkeybusiness
+      containers:
+        - name: refresh-worker
+          image: ghcr.io/matta-kelly/lotus-lake-cube:latest
+          imagePullPolicy: Always
+          env:
+            # KEY: This makes it a refresh worker
+            - name: CUBEJS_REFRESH_WORKER
+              value: "true"
+            # Production mode
+            - name: CUBEJS_DEV_MODE
+              value: "false"
+            - name: CUBEJS_CACHE_AND_QUEUE_DRIVER
+              value: "cubestore"
+            # Cube Store connection
+            - name: CUBEJS_CUBESTORE_HOST
+              value: "cubestore-router"
+            - name: CUBEJS_CUBESTORE_PORT
+              value: "3030"
+            # DuckDB configuration (same as API)
+            - name: CUBEJS_DB_TYPE
+              value: "duckdb"
+            - name: CUBEJS_DB_DUCKDB_S3_ENDPOINT
+              value: "seaweedfs-s3.seaweedfs.svc.cluster.local:8333"
+            - name: CUBEJS_DB_DUCKDB_S3_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: lotus-lake-terraform-vars
+                  key: s3_access_key_id
+            - name: CUBEJS_DB_DUCKDB_S3_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: lotus-lake-terraform-vars
+                  key: s3_secret_access_key
+            - name: CUBEJS_DB_DUCKDB_S3_USE_SSL
+              value: "false"
+            - name: CUBEJS_DB_DUCKDB_S3_URL_STYLE
+              value: "path"
+            # DuckLake catalog (same as API)
+            - name: DUCKLAKE_DB_HOST
+              value: "ducklake-db-rw.lotus-lake.svc.cluster.local"
+            - name: DUCKLAKE_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ducklake-db-app
+                  key: password
+            # API secret (same as API)
+            - name: CUBEJS_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: lotus-lake-terraform-vars
+                  key: cubejs_api_secret
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "250m"
+            limits:
+              memory: "4Gi"
+              cpu: "1"
