@@ -238,6 +238,10 @@ spec:
             # SQL API (PostgreSQL protocol)
             - name: CUBEJS_PG_SQL_PORT
               value: "5432"
+            - name: CUBEJS_SQL_USER
+              value: "pete"
+            - name: CUBEJS_SQL_PASSWORD
+              value: "vHOyta94Dr/Fgp8CQtT+wR7OVPFbHSlx"
           resources:
             requests:
               memory: "2Gi"
