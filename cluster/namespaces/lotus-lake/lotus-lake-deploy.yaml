@@ -20,7 +20,7 @@ spec:
     namespace: lotus-lake
   path: ./deploy
   prune: true
-  wait: false  # Disabled to prevent health check deadlock when HelmRelease fails
+  wait: true
   targetNamespace: lotus-lake
   dependsOn:
     - name: infrastructure-services
