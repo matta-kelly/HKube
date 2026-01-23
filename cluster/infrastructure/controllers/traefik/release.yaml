@@ -26,13 +26,18 @@ spec:
     # Use host network for reliable external access (bypasses CNI hostPort issues)
     hostNetwork: true
 
-    # Allow binding to privileged ports (80, 443) without running as root
+    # Run as root for hostNetwork low port binding (80, 443)
+    # This is required because NET_BIND_SERVICE alone doesn't work with
+    # runAsNonRoot:true and allowPrivilegeEscalation:false
     securityContext:
       capabilities:
-        add:
-          - NET_BIND_SERVICE
         drop:
           - ALL
+        add:
+          - NET_BIND_SERVICE
+      runAsNonRoot: false
+      runAsUser: 0
+      runAsGroup: 0
 
     # Ports - no hostPort needed with hostNetwork, Traefik binds directly
     ports:
