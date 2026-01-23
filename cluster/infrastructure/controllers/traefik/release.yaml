@@ -23,7 +23,10 @@ spec:
       strategy:
         type: Recreate
 
-    # Bind to host ports so public IP works
+    # Use host network for reliable external access (bypasses CNI hostPort issues)
+    hostNetwork: true
+
+    # Port config (hostPort no longer needed with hostNetwork, but keeping for clarity)
     ports:
       web:
         hostPort: 80
