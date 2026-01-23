@@ -26,15 +26,17 @@ spec:
     # Use host network for reliable external access (bypasses CNI hostPort issues)
     hostNetwork: true
 
-    # Port config (hostPort no longer needed with hostNetwork, but keeping for clarity)
+    # Ports - no hostPort needed with hostNetwork, Traefik binds directly
     ports:
       web:
-        hostPort: 80
+        port: 80
+        exposedPort: 80
       websecure:
-        hostPort: 443
+        port: 443
+        exposedPort: 443
       postgres:
         port: 5432
-        hostPort: 5432
+        exposedPort: 5432
         protocol: TCP
 
     # Disable LoadBalancer (using hostPort instead)
