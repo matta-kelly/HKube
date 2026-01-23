@@ -38,6 +38,10 @@ spec:
         port: 5432
         exposedPort: 5432
         protocol: TCP
+      # Use 9101 for metrics to avoid conflict with node_exporter on 9100
+      metrics:
+        port: 9101
+        exposedPort: 9101
 
     # Disable LoadBalancer (using hostPort instead)
     service:
