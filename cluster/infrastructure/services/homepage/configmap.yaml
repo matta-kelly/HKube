@@ -48,9 +48,14 @@ data:
             siteMonitor: https://auth.kube.datamountainsolutions.com
         - Headscale:
             icon: tailscale.png
-            href: https://mesh.kube.datamountainsolutions.com
-            description: Mesh Network Management
-            siteMonitor: https://mesh.kube.datamountainsolutions.com
+            href: https://headscale.datamountainsolutions.com
+            description: Mesh VPN Coordinator
+            siteMonitor: https://headscale.datamountainsolutions.com
+        - Forgejo:
+            icon: forgejo.png
+            href: https://forgejo.datamountainsolutions.com
+            description: Git Server
+            siteMonitor: https://forgejo.datamountainsolutions.com
         - Traefik:
             icon: traefik.png
             href: https://grafana.kube.datamountainsolutions.com/d/traefik/traefik
