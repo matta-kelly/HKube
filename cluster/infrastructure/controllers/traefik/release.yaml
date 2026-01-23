@@ -27,17 +27,18 @@ spec:
     hostNetwork: true
 
     # Run as root for hostNetwork low port binding (80, 443)
-    # This is required because NET_BIND_SERVICE alone doesn't work with
-    # runAsNonRoot:true and allowPrivilegeEscalation:false
+    # podSecurityContext = pod-level, securityContext = container-level
+    podSecurityContext:
+      runAsNonRoot: false
+      runAsUser: 0
+      runAsGroup: 0
     securityContext:
       capabilities:
         drop:
           - ALL
         add:
           - NET_BIND_SERVICE
-      runAsNonRoot: false
-      runAsUser: 0
-      runAsGroup: 0
+      readOnlyRootFilesystem: true
 
     # Ports - no hostPort needed with hostNetwork, Traefik binds directly
     ports:
