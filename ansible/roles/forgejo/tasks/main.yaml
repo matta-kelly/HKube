@@ -1,0 +1,72 @@
+# ==============================================================================
+# Forgejo Role - Self-Hosted Git Server
+# ==============================================================================
+# Deploys Forgejo via Docker Compose. Forgejo is a soft fork of Gitea,
+# community-maintained and fully compatible.
+#
+# Why Docker Compose:
+#   - Forgejo recommends container deployment
+#   - Easy upgrades (change image tag, docker compose up)
+#   - Isolated from system packages
+#   - Matches Forgejo's official docs
+#
+# Architecture:
+#   - Web UI: 127.0.0.1:3000 (behind Caddy)
+#   - Git SSH: 0.0.0.0:2222 (direct, not proxied)
+#   - Database: SQLite (simple, sufficient for single-user)
+#   - Data: /opt/forgejo/data (persistent volume)
+#
+# Required variables:
+#   forgejo_domain: e.g., forgejo.kube.datamountainsolutions.com
+#
+# Optional variables:
+#   forgejo_version: Docker image tag (default: 9)
+#   forgejo_ssh_port: External SSH port (default: 2222)
+#
+# Depends on: docker, caddy
+# ==============================================================================
+
+- name: Create Forgejo directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - /opt/forgejo
+    - /opt/forgejo/data
+
+- name: Deploy Forgejo docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: /opt/forgejo/docker-compose.yml
+    mode: "0644"
+  notify: Restart Forgejo
+
+- name: Start Forgejo
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: /opt/forgejo
+  register: forgejo_start
+  changed_when: "'Started' in forgejo_start.stderr or 'Created' in forgejo_start.stderr"
+
+- name: Wait for Forgejo to be ready
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:3000"
+    status_code: [200, 302]
+  register: forgejo_health
+  until: forgejo_health.status in [200, 302]
+  retries: 30
+  delay: 2
+
+- name: Display Forgejo setup info
+  ansible.builtin.debug:
+    msg: |
+
+      =============================================
+      FORGEJO INSTALLED
+
+      Web UI: https://{{ forgejo_domain }}
+      Git SSH: ssh://git@{{ forgejo_domain }}:{{ forgejo_ssh_port | default(2222) }}/
+
+      First visit the web UI to create admin account.
+      =============================================

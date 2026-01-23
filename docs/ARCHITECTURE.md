@@ -42,9 +42,13 @@ H-Kube is a hybrid Kubernetes cluster spanning cloud and home infrastructure, se
 ### Cloud Nodes (Hetzner)
 
 **anchor (VPS)**
-- **Role:** Headscale VPN coordinator
-- **IP:** `5.75.138.163` (public), `100.64.0.1` (tailnet)
-- **Services:** Headscale, HAProxy (optional)
+- **Role:** Bootstrap layer (VPN + Git)
+- **IP:** Oregon datacenter (public), `100.64.0.1` (tailnet)
+- **Services:**
+  - Caddy (reverse proxy, TLS termination)
+  - Headscale (VPN coordinator)
+  - Forgejo (Git server)
+  - HAProxy (k3s API load balancer)
 - **Not part of K3s cluster**
 
 **cloud-cp-1 (VPS)**
@@ -136,31 +140,33 @@ User Request
 ### Headscale ACLs
 
 **File:** `/etc/headscale/acl.yaml` on anchor VPS
+**Template:** `ansible/roles/headscale/templates/acl.yaml.j2`
+**Config:** `config/config.yaml` (acl section)
 
 ```json
 {
   "groups": {
-    "group:admin": ["mkultra@datamountainsolutions.com"],
+    "group:admin": ["mattakellyy@gmail.com"],
     "group:landl-users": ["matthew.kelly@lotusandluna.com"]
-  },
-  "tagOwners": {
-    "tag:infra": ["group:admin"]
   },
   "acls": [
     {"action": "accept", "src": ["group:admin"], "dst": ["*:*"]},
-    {"action": "accept", "src": ["tag:infra"], "dst": ["tag:infra:*"]},
-    {"action": "accept", "src": ["group:landl-users"], "dst": ["tag:infra:80", "tag:infra:443", "tag:infra:5432"]},
-    {"action": "accept", "src": ["tag:client-a"], "dst": ["tag:client-a:*"]},
-    {"action": "accept", "src": ["tag:client-b"], "dst": ["tag:client-b:*"]}
+    {"action": "accept", "src": ["h-kube"], "dst": ["*:*"]},
+    {"action": "accept", "src": ["group:landl-users"], "dst": ["*:80", "*:443", "*:5432"]}
   ]
 }
 ```
 
+**Access Levels:**
+- `group:admin` - Full access (personal admin account)
+- `h-kube` - Full access (infrastructure service account, used by all nodes)
+- `group:landl-users` - Limited to web (80/443) + database (5432) only
+
 **Key Points:**
 - Email-based group membership
-- Default deny (no `*:*` rule except admin)
+- Default deny (no `*:*` rule except admin and h-kube)
 - Port-specific restrictions for landl-users
-- Node tags for infrastructure isolation
+- ACL emails defined in `config/config.yaml` and templated via Ansible
 
 ---
 

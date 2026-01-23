@@ -1,0 +1,46 @@
+# ==============================================================================
+# Caddyfile - Reverse Proxy Configuration
+# ==============================================================================
+# Managed by Ansible - do not edit manually
+#
+# Architecture:
+#   Internet :443 → Caddy → headscale (127.0.0.1:8080)
+#                        → forgejo   (127.0.0.1:3000)
+#
+# Caddy handles:
+#   - TLS termination (auto Let's Encrypt)
+#   - Routing by hostname
+#   - HTTP → HTTPS redirect
+# ==============================================================================
+
+# Global options
+{
+	email {{ admin_email }}
+}
+
+# ------------------------------------------------------------------------------
+# Headscale - VPN Coordinator
+# ------------------------------------------------------------------------------
+# Headscale needs WebSocket support for control protocol
+{{ headscale_domain }} {
+	reverse_proxy 127.0.0.1:8080 {
+		# Headscale uses WebSockets for control channel
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}
+
+# ------------------------------------------------------------------------------
+# Forgejo - Git Server
+# ------------------------------------------------------------------------------
+# Forgejo web UI and HTTPS git operations
+{{ forgejo_domain }} {
+	reverse_proxy 127.0.0.1:3000 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

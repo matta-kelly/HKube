@@ -164,6 +164,28 @@ generated/
 ssh cloud-cp "sudo kubectl annotate --overwrite -n flux-system kustomization/flux-system reconcile.fluxcd.io/requestedAt=\"\$(date +%s)\""
 ```
 
+## ACL Management
+
+ACLs control who can access what on the Tailscale mesh. Defined in `config/config.yaml`:
+
+```yaml
+acl:
+  admin_emails:
+    - mattakellyy@gmail.com
+  landl_user_emails:
+    - matthew.kelly@lotusandluna.com
+```
+
+**Add a new user:**
+1. Add email to appropriate list in config.yaml
+2. `make generate`
+3. `make anchor-configure` (re-runs ansible, deploys new ACL)
+4. User logs in via Authentik OIDC, gets mesh access with assigned permissions
+
+**Access levels:**
+- `admin_emails` - Full access to everything
+- `landl_user_emails` - Web (80/443) + database (5432) only
+
 ## Principles
 
 1. **Config drives state** - `config/config.yaml` is the source of truth

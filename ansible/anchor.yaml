@@ -14,11 +14,26 @@
     - name: Verify connectivity
       ansible.builtin.ping:
 
-  vars_files:
-    - ../cluster-config.yaml
+  # All vars come from generated/inventory.yml (domain, headscale_domain, forgejo_domain, etc.)
+  # Run 'make generate' after editing config/config.yaml to update vars
 
   roles:
+    # Layer 1: System base (security hardening, users)
     - role: base
-    - role: headscale
-    - role: tailscale
-    - role: haproxy
+
+    # Layer 2: Docker (required by Forgejo)
+    - role: docker
+
+    # Layer 3: Caddy reverse proxy (handles TLS for all services)
+    # Must run BEFORE headscale/forgejo since they bind to localhost only
+    - role: caddy
+
+    # Layer 4: Core services (behind Caddy)
+    - role: headscale    # VPN coordinator - 127.0.0.1:8080
+    - role: forgejo      # Git server - 127.0.0.1:3000, SSH :2222
+
+    # Layer 5: Mesh networking
+    - role: tailscale    # Connect anchor to its own mesh
+
+    # Layer 6: Cluster services
+    - role: haproxy      # k3s API load balancer (Tailscale IP only)

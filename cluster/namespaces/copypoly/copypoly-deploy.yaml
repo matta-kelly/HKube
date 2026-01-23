@@ -1,0 +1,28 @@
+# Flux Kustomization - deploys from copypoly repo
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: copypoly-deploy
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: copypoly
+    namespace: flux-system
+  path: ./manifests/overlays/prod
+  prune: true
+  wait: true
+  targetNamespace: copypoly
+  dependsOn:
+    - name: infrastructure-services
+  decryption:
+    provider: sops
+    secretRef:
+      name: sops-age
+  postBuild:
+    substituteFrom:
+      - kind: ConfigMap
+        name: cluster-vars

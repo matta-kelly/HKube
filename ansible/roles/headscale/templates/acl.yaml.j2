@@ -1,18 +1,11 @@
 {
   "groups": {
-    "group:admin": ["mkultra@{{ domain }}"],
-    "group:landl-users": []
-  },
-  "tagOwners": {
-    "tag:infra": ["group:admin"],
-    "tag:client-a": ["group:admin"],
-    "tag:client-b": ["group:admin"]
+    "group:admin": {{ acl_admin_emails | to_json }},
+    "group:landl-users": {{ acl_landl_user_emails | to_json }}
   },
   "acls": [
     {"action": "accept", "src": ["group:admin"], "dst": ["*:*"]},
-    {"action": "accept", "src": ["tag:infra"], "dst": ["tag:infra:*"]},
-    {"action": "accept", "src": ["group:landl-users"], "dst": ["tag:infra:80", "tag:infra:443", "tag:infra:5432"]},
-    {"action": "accept", "src": ["tag:client-a"], "dst": ["tag:client-a:*"]},
-    {"action": "accept", "src": ["tag:client-b"], "dst": ["tag:client-b:*"]}
+    {"action": "accept", "src": ["h-kube"], "dst": ["*:*"]},
+    {"action": "accept", "src": ["group:landl-users"], "dst": ["*:80", "*:443", "*:5432"]}
   ]
 }

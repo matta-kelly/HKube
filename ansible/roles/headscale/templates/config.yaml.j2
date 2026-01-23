@@ -1,6 +1,8 @@
 # Headscale configuration
+# NOTE: Headscale runs behind Caddy reverse proxy.
+# Caddy handles TLS termination on :443, proxies to Headscale on :8080.
 server_url: https://{{ headscale_domain }}
-listen_addr: 0.0.0.0:443
+listen_addr: {{ headscale_listen_addr | default('127.0.0.1:8080') }}
 metrics_listen_addr: 127.0.0.1:9090
 
 grpc_listen_addr: 127.0.0.1:50443
@@ -46,12 +48,10 @@ dns:
       - 1.1.1.1
       - 9.9.9.9
 
+# TLS is handled by Caddy reverse proxy - disable Headscale's built-in TLS
 tls_cert_path: ""
 tls_key_path: ""
-tls_letsencrypt_hostname: "{{ headscale_domain }}"
-tls_letsencrypt_cache_dir: /var/lib/headscale/cache
-tls_letsencrypt_challenge_type: HTTP-01
-tls_letsencrypt_listen: :80
+# tls_letsencrypt_* settings removed - Caddy handles HTTPS
 
 {% if oidc_enabled | default(false) %}
 # OIDC Authentication via Authentik

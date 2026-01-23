@@ -1,0 +1,73 @@
+# ==============================================================================
+# Forgejo Docker Compose
+# ==============================================================================
+# Managed by Ansible - do not edit manually
+#
+# Data persistence: /opt/forgejo/data
+# Backup this directory to preserve repos, users, and settings.
+# ==============================================================================
+
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:{{ forgejo_version | default('9') }}
+    container_name: forgejo
+    restart: unless-stopped
+
+    environment:
+      # User/Group IDs - match host for volume permissions
+      - USER_UID=1000
+      - USER_GID=1000
+
+      # -------------------------------------------------------------------------
+      # Server configuration
+      # -------------------------------------------------------------------------
+      - FORGEJO__server__DOMAIN={{ forgejo_domain }}
+      - FORGEJO__server__ROOT_URL=https://{{ forgejo_domain }}/
+      - FORGEJO__server__HTTP_PORT=3000
+      - FORGEJO__server__SSH_DOMAIN={{ forgejo_domain }}
+      - FORGEJO__server__SSH_PORT={{ forgejo_ssh_port | default(2222) }}
+      - FORGEJO__server__SSH_LISTEN_PORT=22
+      - FORGEJO__server__LFS_START_SERVER=true
+
+      # -------------------------------------------------------------------------
+      # Database - SQLite for simplicity
+      # -------------------------------------------------------------------------
+      - FORGEJO__database__DB_TYPE=sqlite3
+      - FORGEJO__database__PATH=/data/gitea/gitea.db
+
+      # -------------------------------------------------------------------------
+      # Security
+      # -------------------------------------------------------------------------
+      - FORGEJO__security__INSTALL_LOCK=false
+      - FORGEJO__security__SECRET_KEY=
+      - FORGEJO__security__INTERNAL_TOKEN=
+
+      # -------------------------------------------------------------------------
+      # Service settings
+      # -------------------------------------------------------------------------
+      - FORGEJO__service__DISABLE_REGISTRATION=false
+      - FORGEJO__service__REQUIRE_SIGNIN_VIEW=false
+      - FORGEJO__service__DEFAULT_KEEP_EMAIL_PRIVATE=true
+
+      # -------------------------------------------------------------------------
+      # Repository defaults
+      # -------------------------------------------------------------------------
+      - FORGEJO__repository__DEFAULT_BRANCH=main
+      - FORGEJO__repository__DEFAULT_PRIVATE=true
+
+      # -------------------------------------------------------------------------
+      # Logging
+      # -------------------------------------------------------------------------
+      - FORGEJO__log__MODE=console
+      - FORGEJO__log__LEVEL=info
+
+    volumes:
+      - /opt/forgejo/data:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+    ports:
+      # Web UI - only localhost, Caddy handles external
+      - "127.0.0.1:3000:3000"
+      # Git SSH - exposed directly (no proxy needed for SSH)
+      - "{{ forgejo_ssh_port | default(2222) }}:22"

@@ -1,0 +1,14 @@
+# GitRepository - Flux watches this for changes
+# TODO: Update URL when Forgejo is running
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: copypoly
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://forgejo.${CLUSTER_DOMAIN}/mkultra/copypoly  # Update when Forgejo ready
+  ref:
+    branch: main
+  # secretRef:
+  #   name: copypoly-git-auth  # Uncomment for private repo

@@ -9,20 +9,22 @@ Hybrid Kubernetes cluster spanning cloud VPS and home servers, connected via Tai
                         |
                 +-------+-------+
                 |  Anchor VPS   |
-                |  (Headscale)  |
+                |  Headscale    |
+                |  Forgejo      |
+                |  Caddy        |
                 +-------+-------+
                         | Tailscale Mesh
         +---------------+---------------+
         |               |               |
 +-------+-------+ +-----+-----+ +-------+-------+
 | Cloud CP VPS  | | gpa-server| | monkeybusiness|
-| (k3s server)  | | (k3s agent)| | (k3s agent)  |
+| (k3s server)  | | (k3s server)| | (k3s agent)  |
 | location:cloud| |location:home| |location:home |
 +---------------+ +-----------+ +---------------+
 ```
 
 **Components:**
-- **Anchor VPS** - Headscale coordination server
+- **Anchor VPS** - Caddy (TLS), Headscale (VPN), Forgejo (Git), HAProxy (k3s LB)
 - **Cloud Control Plane** - k3s server with public IP (runs Traefik ingress)
 - **Home Workers** - k3s agents with local storage
 - **CNI** - Flannel with VXLAN over Tailscale

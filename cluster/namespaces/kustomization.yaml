@@ -9,4 +9,5 @@ kind: Kustomization
 resources:
   - homenetes
   - lotus-lake
+  # - copypoly    # TODO: Enable when Forgejo ready
   # - quant       # TODO: Enable when ready to deploy

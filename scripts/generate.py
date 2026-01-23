@@ -52,9 +52,11 @@ def generate_inventory(config, secrets):
         "all": {
             "vars": {
                 "admin_user": identity["admin_user"],
+                "admin_email": f"admin@{identity['domain']}",
                 "domain": identity["domain"],
                 "mesh_domain": f"mesh.{identity['domain']}",
                 "headscale_domain": f"headscale.{identity['domain']}",
+                "forgejo_domain": f"forgejo.{identity['domain']}",
                 "kube_domain": f"kube.{identity['domain']}",
                 "github_user": identity["github_user"],
                 "github_repo": identity["github_repo"],
@@ -119,6 +121,10 @@ def generate_inventory(config, secrets):
                 host_entry["oidc_client_id"] = secrets.get("OIDC_CLIENT_ID", "")
                 host_entry["oidc_client_secret"] = secrets.get("OIDC_CLIENT_SECRET", "")
                 host_entry["oidc_allowed_groups"] = oidc_config.get("allowed_groups", [])
+                # Add ACL configuration
+                acl_config = config.get("acl", {})
+                host_entry["acl_admin_emails"] = acl_config.get("admin_emails", [])
+                host_entry["acl_landl_user_emails"] = acl_config.get("landl_user_emails", [])
 
             # Build k3s node labels from config
             # These get applied by Ansible during bootstrap

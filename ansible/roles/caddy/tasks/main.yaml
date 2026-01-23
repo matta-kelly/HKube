@@ -1,0 +1,75 @@
+# ==============================================================================
+# Caddy Role - Reverse Proxy with Automatic TLS
+# ==============================================================================
+# Caddy handles TLS termination for all public-facing services on anchor.
+# Services connect to Caddy internally, Caddy handles Let's Encrypt.
+#
+# Why Caddy:
+#   - Automatic HTTPS (Let's Encrypt built-in)
+#   - Simple config syntax
+#   - Low resource usage (~50MB RAM)
+#   - Handles multiple domains on single IP
+#
+# Required variables:
+#   headscale_domain: e.g., headscale.kube.datamountainsolutions.com
+#   forgejo_domain: e.g., forgejo.kube.datamountainsolutions.com
+#   admin_email: For Let's Encrypt registration
+#
+# Depends on: Nothing (runs first)
+# Depended by: headscale, forgejo (both run behind Caddy)
+# ==============================================================================
+
+- name: Install Caddy prerequisites
+  ansible.builtin.apt:
+    name:
+      - debian-keyring
+      - debian-archive-keyring
+      - apt-transport-https
+      - curl
+    state: present
+
+# Download and dearmor GPG key in one step (Caddy provides armored ASCII key, APT needs binary)
+- name: Add Caddy GPG key (dearmored)
+  ansible.builtin.shell: |
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor > /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+  args:
+    creates: /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+
+- name: Add Caddy repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/caddy-stable-archive-keyring.gpg] https://dl.cloudsmith.io/public/caddy/stable/deb/debian any-version main"
+    state: present
+    filename: caddy
+
+- name: Install Caddy
+  ansible.builtin.apt:
+    name: caddy
+    state: present
+    update_cache: true
+
+- name: Create Caddy config directory
+  ansible.builtin.file:
+    path: /etc/caddy
+    state: directory
+    mode: "0755"
+
+- name: Deploy Caddyfile
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: /etc/caddy/Caddyfile
+    owner: caddy
+    group: caddy
+    mode: "0644"
+  notify: Reload Caddy
+
+- name: Enable and start Caddy
+  ansible.builtin.systemd:
+    name: caddy
+    enabled: true
+    state: started
+
+- name: Wait for Caddy to start
+  ansible.builtin.wait_for:
+    port: 80    # Caddy listens on 80 until TLS certs obtained (requires DNS)
+    delay: 2
+    timeout: 30

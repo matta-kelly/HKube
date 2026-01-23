@@ -54,11 +54,19 @@ H-Kube uses two distinct security layers for different access patterns:
 
 ## User Access Matrix
 
+| User Type | Description | Access |
+|-----------|-------------|--------|
+| **group:admin** | Personal admin account (mattakellyy@gmail.com) | Full access to everything |
+| **h-kube** | Infrastructure service account | Full access (all nodes use this) |
+| **group:landl-users** | Work/employee accounts (matthew.kelly@lotusandluna.com) | Web (80/443) + DB (5432) only |
+
+**Detailed Access:**
+
 | User Type | Web Apps (Port 80/443) | Direct DB Access (Port 5432) | SSH | Full Admin |
 |-----------|----------------------|----------------------------|-----|-----------|
-| **admin** (mkultra) | ✅ Via SSO | ✅ Via VPN | ✅ Via VPN | ✅ |
-| **landl-users** (boss, employees) | ✅ Via SSO | ✅ Via VPN | ❌ | ❌ |
-| **tag:infra** (nodes) | N/A | ✅ Node-to-node | ✅ | ❌ |
+| **group:admin** | ✅ Via SSO | ✅ Via VPN | ✅ Via VPN | ✅ |
+| **h-kube** (nodes) | N/A | ✅ Node-to-node | ✅ | ❌ |
+| **group:landl-users** | ✅ Via SSO | ✅ Via VPN | ❌ | ❌ |
 
 ---
 
