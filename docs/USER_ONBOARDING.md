@@ -107,7 +107,7 @@ Step 2: Connect to VPN
 Step 3: Access Services
 Once connected, you can access:
 - DuckLake Database:
-  - Host: 100.64.0.6 (or monkeybusiness)
+  - Host: 100.64.0.4 (or monkeybusiness)
   - Port: 5432
   - Use this in Power BI, DBeaver, etc.
 - Web Services:
@@ -149,7 +149,7 @@ Questions? Reply to this email.
 
 #### Test 1: DuckLake Database
 Using Power BI or any database client:
-- **Host:** `100.64.0.6` or `monkeybusiness`
+- **Host:** `100.64.0.4` or `monkeybusiness`
 - **Port:** `5432`
 - **Database:** `ducklake`
 - **Should connect:** ✅

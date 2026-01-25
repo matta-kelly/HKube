@@ -119,15 +119,15 @@ anchor-destroy: venv
 
 anchor-init: generate
 	@echo "Initializing Anchor VPS (first run as root)..."
-	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml anchor.yaml -u root'
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml anchor.yaml -e ansible_user=root'
 	@echo ""
 	@echo "=========================================="
 	@echo "Done! Save the HEADSCALE_AUTHKEY to config/secrets.env"
 	@echo "=========================================="
 
 anchor-configure: generate
-	@echo "Configuring Anchor VPS..."
-	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml anchor.yaml'
+	@echo "Configuring Anchor VPS (as mkultra)..."
+	@bash -c 'source .venv/bin/activate && set -a && source config/secrets.env && set +a && cd ansible && ansible-playbook -i ../generated/inventory.yml anchor.yaml -e ansible_user=mkultra'
 
 anchor-ssh:
 	@bash -c 'ANCHOR_IP=$$(cd terraform/anchor-vps && terraform output -raw ipv4_address 2>/dev/null) && \

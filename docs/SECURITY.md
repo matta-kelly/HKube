@@ -34,11 +34,11 @@ H-Kube uses two distinct security layers for different access patterns:
 1. User installs Tailscale client
 2. Connects via `--login-server=https://headscale.datamountainsolutions.com`
 3. Authenticates through Authentik OIDC
-4. Joins tailnet, gets assigned IP (e.g., `100.64.0.6`)
+4. Joins tailnet, gets assigned IP (e.g., `100.64.0.4`)
 5. Headscale ACLs restrict what they can access based on group
 
 **Protected Services:**
-- DuckLake Postgres (`100.64.0.6:5432`)
+- DuckLake Postgres (`100.64.0.4:5432`)
 - SSH access to nodes
 - Internal cluster services
 - Any port-specific access

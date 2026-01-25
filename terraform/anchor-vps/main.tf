@@ -1,8 +1,8 @@
 # ==============================================================================
 # Anchor VPS - Main Configuration
 # ==============================================================================
-# Creates a small VPS on Hetzner Cloud to run Headscale + HAProxy
-# This is the networking foundation for the hybrid cluster
+# Creates the anchor VPS in Oregon (Hetzner hil datacenter).
+# Runs: Headscale, Caddy, Forgejo, HAProxy.
 #
 # Usage:
 #   export HCLOUD_TOKEN="your-token"
@@ -26,11 +26,10 @@ provider "hcloud" {
   token = var.hcloud_token
 }
 # ------------------------------------------------------------------------------
-# SSH Key
+# SSH Key (use existing from Hetzner account)
 # ------------------------------------------------------------------------------
-resource "hcloud_ssh_key" "default" {
-  name       = "${var.name}-key"
-  public_key = var.ssh_public_key
+data "hcloud_ssh_key" "default" {
+  fingerprint = var.ssh_key_fingerprint
 }
 # ------------------------------------------------------------------------------
 # Firewall
@@ -82,7 +81,7 @@ resource "hcloud_server" "anchor" {
   image       = var.image
   server_type = var.server_type
   location    = var.location
-  ssh_keys    = [hcloud_ssh_key.default.id]
+  ssh_keys    = [data.hcloud_ssh_key.default.id]
   firewall_ids = [hcloud_firewall.anchor.id]
   public_net {
     ipv4_enabled = true

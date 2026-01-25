@@ -15,9 +15,10 @@ variable "hcloud_token" {
   sensitive   = true
 }
 
-variable "ssh_public_key" {
-  description = "SSH public key (from TF_VAR_ssh_public_key)"
+variable "ssh_key_fingerprint" {
+  description = "SSH key fingerprint (MD5) to look up existing key in Hetzner"
   type        = string
+  default     = "33:0f:a1:17:ea:59:25:24:20:9c:a4:87:9e:93:78:4b"
 }
 
 # ------------------------------------------------------------------------------
@@ -27,13 +28,13 @@ variable "ssh_public_key" {
 variable "name" {
   description = "Server name"
   type        = string
-  default     = "Anchor"
+  default     = "anchor"
 }
 
 variable "server_type" {
-  description = "Hetzner server type (~$5/mo)"
+  description = "Hetzner server type (~$10/mo for Oregon)"
   type        = string
-  default     = "cx22"
+  default     = "cpx21"  # Oregon uses CPX types, not CX
 }
 
 variable "location" {

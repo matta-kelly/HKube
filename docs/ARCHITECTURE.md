@@ -53,7 +53,7 @@ H-Kube is a hybrid Kubernetes cluster spanning cloud and home infrastructure, se
 
 **cloud-cp-1 (VPS)**
 - **Role:** K3s control plane
-- **IP:** `178.156.198.140` (public), `100.64.0.5` (tailnet)
+- **IP:** `178.156.198.140` (public), `100.64.0.2` (tailnet)
 - **Services:** K3s server, etcd
 
 ### Home Nodes
@@ -66,7 +66,7 @@ H-Kube is a hybrid Kubernetes cluster spanning cloud and home infrastructure, se
 
 **monkeybusiness**
 - **Role:** K3s worker (home)
-- **IP:** `192.168.50.90` (LAN), `100.64.0.6` (tailnet)
+- **IP:** `192.168.50.90` (LAN), `100.64.0.4` (tailnet)
 - **Services:** DuckLake Postgres, other workloads
 - **Storage:** 1TB HDD (bulk)
 
@@ -100,7 +100,7 @@ H-Kube is a hybrid Kubernetes cluster spanning cloud and home infrastructure, se
 ```
 User Request
   → Public DNS (Cloudflare/etc)
-  → anchor VPS (5.75.138.163:443)
+  → anchor VPS (5.78.92.191:443)
   → Traefik Ingress Controller (in cluster)
   → Authentik Middleware (forward auth check)
   → Backend Service (if authorized)
@@ -269,7 +269,7 @@ make generate  # Runs scripts/generate.py
 
 ```
 1. User → https://airbyte.landl.datamountainsolutions.com
-2. DNS → 5.75.138.163 (anchor VPS)
+2. DNS → 5.78.92.191 (anchor VPS)
 3. Traefik Ingress → Receives request
 4. Middleware → Calls Authentik forward auth endpoint
 5. Authentik → Checks browser session
@@ -291,7 +291,7 @@ make generate  # Runs scripts/generate.py
 6. Headscale → Checks ACL: user in group:landl-users
 7. ACL → Allows dst: tag:infra:5432
 8. User → WireGuard tunnel established
-9. Power BI → Connects to 100.64.0.6:5432
+9. Power BI → Connects to 100.64.0.4:5432
 10. PostgreSQL → Connection accepted
 ```
 

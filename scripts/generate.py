@@ -103,10 +103,15 @@ def generate_inventory(config, secrets):
 
             host_entry = {
                 "ansible_host": node.get("tailscale_ip") or node["ip"],
-                "ansible_user": node.get("ssh_user", identity["admin_user"]),
                 "ansible_ssh_private_key_file": ssh_key_path,
+                "ssh_public_key_file": f"{ssh_key_path}.pub",  # For base role to add to authorized_keys
                 "tailscale_hostname": node.get("tailscale_hostname", name),
             }
+
+            # Don't set ansible_user for anchor - Makefile controls it
+            # (anchor-init uses root, anchor-configure uses admin_user)
+            if node.get("role") != "headscale":
+                host_entry["ansible_user"] = node.get("ssh_user", identity["admin_user"])
 
             # Add firewall ports if defined
             if "firewall_ports" in node:

@@ -1,14 +1,14 @@
 # ==============================================================================
-# Anchor VPS - Outputs
+# Anchor Oregon VPS - Outputs
 # ==============================================================================
 # These values are used by Ansible to configure the server
 # ==============================================================================
 output "ipv4_address" {
-  description = "Public IPv4 address of the Anchor server"
+  description = "Public IPv4 address of the Anchor Oregon server"
   value       = hcloud_server.anchor.ipv4_address
 }
 output "ipv6_address" {
-  description = "Public IPv6 address of the Anchor server"
+  description = "Public IPv6 address of the Anchor Oregon server"
   value       = hcloud_server.anchor.ipv6_address
 }
 output "server_id" {
