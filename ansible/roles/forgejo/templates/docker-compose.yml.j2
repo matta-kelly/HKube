@@ -36,9 +36,8 @@ services:
       - FORGEJO__database__PATH=/data/gitea/gitea.db
 
       # -------------------------------------------------------------------------
-      # Security
+      # Security - INSTALL_LOCK managed by app.ini after initial setup
       # -------------------------------------------------------------------------
-      - FORGEJO__security__INSTALL_LOCK=false
       - FORGEJO__security__SECRET_KEY=
       - FORGEJO__security__INTERNAL_TOKEN=
 
