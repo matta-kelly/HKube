@@ -6,8 +6,8 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  url: https://forgejo.${DOMAIN}/mkultra/homedia
+  url: ssh://git@forgejo.datamountainsolutions.com:2222/mkultra/homedia
   ref:
     branch: main
-  # secretRef:
-  #   name: homedia-git-auth  # Uncomment for private repo
+  secretRef:
+    name: flux-system
