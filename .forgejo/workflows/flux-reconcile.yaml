@@ -1,0 +1,142 @@
+# ==============================================================================
+# Flux Reconciliation Workflow
+# ==============================================================================
+# Forces Flux to pick up changes immediately after push.
+# Also cleans up stale HelmCharts that can block deployments.
+#
+# REQUIRED SECRET: KUBECONFIG
+#   Base64-encoded kubeconfig with cluster access
+#   Create with: cat kubeconfig.yaml | base64 -w0
+# ==============================================================================
+
+name: Flux Reconcile
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reconcile_apps:
+        description: 'Also reconcile app GitRepositories (lotus-lake, etc)'
+        type: boolean
+        default: true
+      clean_helmcharts:
+        description: 'Delete orphaned HelmCharts before reconcile'
+        type: boolean
+        default: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Verify cluster access
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      # -------------------------------------------------------------------------
+      # Clean up stale HelmCharts (always run - prevents stuck deploys)
+      # -------------------------------------------------------------------------
+      - name: Clean orphaned HelmCharts
+        run: |
+          echo "Checking for HelmCharts with missing sources..."
+          for chart in $(kubectl get helmchart -n flux-system -o name 2>/dev/null); do
+            # Get the sourceRef details
+            ns=$(kubectl get $chart -n flux-system -o jsonpath='{.spec.sourceRef.namespace}')
+            name=$(kubectl get $chart -n flux-system -o jsonpath='{.spec.sourceRef.name}')
+            kind=$(kubectl get $chart -n flux-system -o jsonpath='{.spec.sourceRef.kind}')
+
+            # Check if source exists
+            if ! kubectl get $kind $name -n $ns &>/dev/null; then
+              echo "Deleting orphaned chart: $chart (missing $kind/$ns/$name)"
+              kubectl delete $chart -n flux-system
+            fi
+          done
+
+      # -------------------------------------------------------------------------
+      # Force reconcile h-kube GitRepository
+      # -------------------------------------------------------------------------
+      - name: Reconcile h-kube GitRepository
+        run: |
+          echo "Forcing h-kube GitRepository reconciliation..."
+          kubectl annotate gitrepository flux-system -n flux-system \
+            reconcile.fluxcd.io/requestedAt="$(date +%s)" --overwrite
+
+          # Wait for it to be ready
+          kubectl wait gitrepository/flux-system -n flux-system \
+            --for=condition=Ready --timeout=60s
+
+      # -------------------------------------------------------------------------
+      # Force reconcile infrastructure
+      # -------------------------------------------------------------------------
+      - name: Reconcile infrastructure Kustomizations
+        run: |
+          echo "Forcing infrastructure reconciliation..."
+          for ks in infrastructure-controllers infrastructure-configs infrastructure-services; do
+            kubectl annotate kustomization $ks -n flux-system \
+              reconcile.fluxcd.io/requestedAt="$(date +%s)" --overwrite || true
+          done
+
+          # Wait for infrastructure-services (depends on others)
+          sleep 5
+          kubectl wait kustomization/infrastructure-services -n flux-system \
+            --for=condition=Ready --timeout=300s || echo "Warning: infrastructure-services not ready yet"
+
+      # -------------------------------------------------------------------------
+      # Force reconcile app GitRepositories
+      # -------------------------------------------------------------------------
+      - name: Reconcile app GitRepositories
+        if: github.event_name == 'push' || github.event.inputs.reconcile_apps == 'true'
+        run: |
+          echo "Forcing app GitRepository reconciliation..."
+
+          # lotus-lake
+          if kubectl get gitrepository lotus-lake -n lotus-lake &>/dev/null; then
+            kubectl annotate gitrepository lotus-lake -n lotus-lake \
+              reconcile.fluxcd.io/requestedAt="$(date +%s)" --overwrite
+            kubectl wait gitrepository/lotus-lake -n lotus-lake \
+              --for=condition=Ready --timeout=60s || true
+          fi
+
+      # -------------------------------------------------------------------------
+      # Force reconcile app Kustomizations
+      # -------------------------------------------------------------------------
+      - name: Reconcile app Kustomizations
+        if: github.event_name == 'push' || github.event.inputs.reconcile_apps == 'true'
+        run: |
+          echo "Forcing app Kustomization reconciliation..."
+
+          # lotus-lake-deploy
+          if kubectl get kustomization lotus-lake-deploy -n flux-system &>/dev/null; then
+            kubectl annotate kustomization lotus-lake-deploy -n flux-system \
+              reconcile.fluxcd.io/requestedAt="$(date +%s)" --overwrite
+          fi
+
+      # -------------------------------------------------------------------------
+      # Status summary
+      # -------------------------------------------------------------------------
+      - name: Show reconciliation status
+        run: |
+          echo "=== GitRepositories ==="
+          kubectl get gitrepository -A
+          echo ""
+          echo "=== Kustomizations ==="
+          kubectl get kustomization -A
+          echo ""
+          echo "=== HelmReleases ==="
+          kubectl get helmrelease -A
+          echo ""
+          echo "=== Failed resources ==="
+          kubectl get kustomization -A | grep -v "True" | grep -v "READY" || echo "None"
+          kubectl get helmrelease -A | grep -v "True" | grep -v "READY" || echo "None"
