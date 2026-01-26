@@ -1,0 +1,13 @@
+# GitRepository - Flux watches this for changes
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: homedia
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://forgejo.${DOMAIN}/mkultra/homedia
+  ref:
+    branch: main
+  # secretRef:
+  #   name: homedia-git-auth  # Uncomment for private repo

@@ -9,5 +9,6 @@ kind: Kustomization
 resources:
   - homenetes
   - lotus-lake
+  - media         # Forgejo: homedia repo
   # - copypoly    # TODO: Enable when Forgejo ready
   # - quant       # TODO: Enable when ready to deploy
