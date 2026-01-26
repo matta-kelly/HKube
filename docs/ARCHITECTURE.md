@@ -99,12 +99,16 @@ H-Kube is a hybrid Kubernetes cluster spanning cloud and home infrastructure, se
 
 ```
 User Request
-  → Public DNS (Cloudflare/etc)
-  → anchor VPS (5.78.92.191:443)
-  → Traefik Ingress Controller (in cluster)
+  → Public DNS (Cloudflare)
+  → cloud-cp-1 (178.156.198.140:443) - Traefik with hostNetwork
   → Authentik Middleware (forward auth check)
   → Backend Service (if authorized)
 ```
+
+**Traefik Configuration Notes:**
+- Uses `hostNetwork: true` to bind directly to ports 80/443 (bypasses CNI hostPort issues)
+- Requires `dnsPolicy: ClusterFirstWithHostNet` to resolve cluster DNS (e.g., authentik service)
+- Runs on control-plane node (has public IP)
 
 ---
 
