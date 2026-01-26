@@ -24,6 +24,9 @@ data:
       Infrastructure:
         style: row
         columns: 4
+      Media:
+        style: row
+        columns: 3
       Homelab:
         style: row
         columns: 2
@@ -64,6 +67,34 @@ data:
             icon: asus-router.png
             href: http://192.168.50.1/
             description: Router Admin
+
+    - Media:
+        - Jellyfin:
+            icon: jellyfin.png
+            href: https://jellyfin.homenetes.datamountainsolutions.com
+            description: Media Server
+            siteMonitor: https://jellyfin.homenetes.datamountainsolutions.com
+        - Jellyseerr:
+            icon: jellyseerr.png
+            href: https://requests.homenetes.datamountainsolutions.com
+            description: Media Requests
+            siteMonitor: https://requests.homenetes.datamountainsolutions.com
+        - Sonarr:
+            icon: sonarr.png
+            href: http://sonarr.media.svc:8989
+            description: TV Shows
+        - Radarr:
+            icon: radarr.png
+            href: http://radarr.media.svc:7878
+            description: Movies
+        - Prowlarr:
+            icon: prowlarr.png
+            href: http://prowlarr.media.svc:9696
+            description: Indexer Manager
+        - qBittorrent:
+            icon: qbittorrent.png
+            href: http://qbittorrent.media.svc:8080
+            description: Torrent Client (VPN)
 
     - Homelab:
         - Immich:
