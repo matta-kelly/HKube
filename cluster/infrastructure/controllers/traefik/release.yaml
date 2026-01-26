@@ -22,12 +22,11 @@ spec:
       replicas: 1
       strategy:
         type: Recreate
+      # Use cluster DNS with hostNetwork so Traefik can resolve cluster services
+      dnsPolicy: ClusterFirstWithHostNet
 
     # Use host network for reliable external access (bypasses CNI hostPort issues)
     hostNetwork: true
-
-    # Use cluster DNS with hostNetwork so Traefik can resolve cluster services
-    dnsPolicy: ClusterFirstWithHostNet
 
     # Run as root for hostNetwork low port binding (80, 443)
     # podSecurityContext = pod-level, securityContext = container-level
