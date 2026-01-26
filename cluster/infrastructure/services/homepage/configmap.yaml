@@ -81,20 +81,24 @@ data:
             siteMonitor: https://requests.homenetes.datamountainsolutions.com
         - Sonarr:
             icon: sonarr.png
-            href: http://sonarr.media.svc:8989
+            href: https://sonarr.homenetes.datamountainsolutions.com
             description: TV Shows
+            siteMonitor: https://sonarr.homenetes.datamountainsolutions.com
         - Radarr:
             icon: radarr.png
-            href: http://radarr.media.svc:7878
+            href: https://radarr.homenetes.datamountainsolutions.com
             description: Movies
+            siteMonitor: https://radarr.homenetes.datamountainsolutions.com
         - Prowlarr:
             icon: prowlarr.png
-            href: http://prowlarr.media.svc:9696
+            href: https://prowlarr.homenetes.datamountainsolutions.com
             description: Indexer Manager
+            siteMonitor: https://prowlarr.homenetes.datamountainsolutions.com
         - qBittorrent:
             icon: qbittorrent.png
-            href: http://qbittorrent.media.svc:8080
+            href: https://qbittorrent.homenetes.datamountainsolutions.com
             description: Torrent Client (VPN)
+            siteMonitor: https://qbittorrent.homenetes.datamountainsolutions.com
 
     - Homelab:
         - Immich:
