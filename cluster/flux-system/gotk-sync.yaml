@@ -13,7 +13,7 @@ spec:
     branch: main
   secretRef:
     name: flux-system
-  url: ssh://git@github.com/matta-kelly/HKube
+  url: ssh://git@forgejo.datamountainsolutions.com:2222/mkultra/HKube
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
