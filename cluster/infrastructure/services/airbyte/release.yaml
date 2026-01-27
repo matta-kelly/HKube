@@ -67,7 +67,7 @@ spec:
     minio:
       enabled: true
       nodeSelector:
-        node.h-kube.io/location: home
+        kubernetes.io/hostname: monkeybusiness
 
     ingress:
       enabled: false
@@ -77,16 +77,7 @@ spec:
     # -------------------------------------------------------------------------
     server:
       nodeSelector:
-        node.h-kube.io/location: home
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values: ["monkeybusiness"]
+        kubernetes.io/hostname: monkeybusiness
       resources:
         requests:
           cpu: 250m
@@ -100,16 +91,7 @@ spec:
     # -------------------------------------------------------------------------
     worker:
       nodeSelector:
-        node.h-kube.io/location: home
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values: ["monkeybusiness"]
+        kubernetes.io/hostname: monkeybusiness
       resources:
         requests:
           cpu: 500m
@@ -123,16 +105,7 @@ spec:
     # -------------------------------------------------------------------------
     workloadLauncher:
       nodeSelector:
-        node.h-kube.io/location: home
-      affinity:
-        nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              preference:
-                matchExpressions:
-                  - key: kubernetes.io/hostname
-                    operator: In
-                    values: ["monkeybusiness"]
+        kubernetes.io/hostname: monkeybusiness
       resources:
         requests:
           cpu: 250m
@@ -146,11 +119,11 @@ spec:
     # -------------------------------------------------------------------------
     connectorBuilderServer:
       nodeSelector:
-        node.h-kube.io/location: home
+        kubernetes.io/hostname: monkeybusiness
 
     # -------------------------------------------------------------------------
     # Workload API Server - move off control plane
     # -------------------------------------------------------------------------
     workloadApiServer:
       nodeSelector:
-        node.h-kube.io/location: home
+        kubernetes.io/hostname: monkeybusiness
