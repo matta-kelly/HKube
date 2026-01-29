@@ -11,9 +11,8 @@ metadata:
   namespace: lotus-lake
 spec:
   interval: 5m
-  url: https://github.com/matta-kelly/lotus-lake
+  url: ssh://git@forgejo.datamountainsolutions.com:2222/mkultra/lotus-lake
   ref:
     branch: main
-  # Uncomment if repo is private:
-  # secretRef:
-  #   name: lotus-lake-git-auth
+  secretRef:
+    name: flux-system
