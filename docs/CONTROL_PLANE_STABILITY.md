@@ -73,11 +73,29 @@
    - ~220GB still unaccounted after SeaweedFS + images + PVCs
    - Likely containerd layers/snapshots
 
+### cloud-cp-1 Crash & Rescale
+
+During CNPG backup disable and CSI pod restarts, cloud-cp-1 became unresponsive.
+
+**Root cause**: Memory exhaustion on under-provisioned VPS (4GB RAM)
+
+**Fix**: Rescaled via Hetzner console from CPX21 (4GB) to CPX31 (8GB)
+
+**Post-rescale status**:
+| Node | Memory | CPU |
+|------|--------|-----|
+| cloud-cp-1 | 43% (of 8GB) | 23% |
+| gpa-server | 44% | 4% |
+| monkeybusiness | 39% | 60% |
+
+Cluster recovered automatically after rescale. Some Flux controllers needed pod restart due to stale API connections.
+
 ### Key Files Modified
 
 - `cluster/infrastructure/services/seaweedfs/csi-release.yaml` - CSI version + cache
 - `cluster/infrastructure/services/kube-prometheus-stack/release.yaml` - monitoring nodeSelector
 - `cluster/infrastructure/services/airbyte/database.yaml` - backup disabled
+- `cluster/infrastructure/services/authentik/database.yaml` - backup disabled
 
 ### Reference: SeaweedFS Memory Leak
 
