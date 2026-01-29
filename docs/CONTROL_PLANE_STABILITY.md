@@ -36,8 +36,8 @@
 |-----------|---------|---------------|----------|-------|
 | airbyte | airbyte-db | DISABLED | 577M | Was 95GB, recovered |
 | authentik | authentik-db | DISABLED | 578M | Was 150GB, recovered |
-| default | immich-db | DISABLED | 84G | Orphaned, kubectl patched, not recovering |
-| default | vaultwarden-db | DISABLED | 321M | Orphaned, kubectl patched |
+| default | immich-db | **DELETED** | 84G | Was orphaned duplicate, deleted |
+| default | vaultwarden-db | **DELETED** | 321M | Was orphaned duplicate, deleted |
 | homenetes | immich-db | DISABLED | 593M | Was 23GB, recovered |
 | homenetes | vaultwarden-db | DISABLED | 8.2G | Should recover after checkpoint |
 | lotus-lake | dagster-db | **Working** | 561M | Different creds, working |
@@ -50,22 +50,63 @@
 - homenetes: immich-db, vaultwarden-db (committed to Forgejo)
 - default/*: orphaned, kubectl patched only (no Git source)
 
+### Immich Data Recovery (IN PROGRESS)
+
+**Problem**: Immich photos not showing. Database empty, photos exist but disconnected.
+
+**Photo Files Location** (on gpa-server):
+- **Original hostPath**: `/mnt/bulk-storage/immich/` - **882 files, 2.9GB** - THIS IS THE SOURCE
+  - `/mnt/bulk-storage/immich/library/` - actual photos
+  - `/mnt/bulk-storage/immich/thumbs/` - thumbnails
+  - `/mnt/bulk-storage/immich/upload/` - uploads
+  - `/mnt/bulk-storage/immich/postgres/` - old postgres data
+- **SeaweedFS PVC** (`homenetes/immich`): Partial copy (~74 files), rsync was attempted but slow
+
+**Database Status**:
+- `homenetes/immich-db` (running): **EMPTY** - only 2 rows, no photo metadata
+- `/mnt/bulk-storage/immich/postgres/`: Old database with metadata (not connected)
+- `/mnt/bulk-storage/k3s/pvc-4ecaef83-b4f9-42f2-b658-004b2aad3235_default_immich-db-1/pgdata/`: Deleted default/immich-db data **STILL ON DISK**
+
+**What happened**:
+1. Originally Immich used hostPath `/mnt/bulk-storage/immich/`
+2. Attempted migration to SeaweedFS PVC + homenetes namespace
+3. Migration incomplete - photos not copied, database not migrated
+4. Orphaned `default/immich-db` was deleted (had 84GB WAL) but data still on disk
+
+**To recover**:
+1. Either restore old database from `/mnt/bulk-storage/immich/postgres/` or `/mnt/bulk-storage/k3s/pvc-4ecaef83.../pgdata/`
+2. Either copy photos to SeaweedFS PVC or reconfigure Immich to use hostPath directly
+3. Note: SeaweedFS FUSE mount is very slow for bulk file operations - investigate root cause
+
+### SeaweedFS CSI Mount Issue
+
+**CRITICAL**: After restarting SeaweedFS CSI mount daemonset pods, ALL existing pods with SeaweedFS PVCs get stale mount handles ("transport endpoint is not connected").
+
+**Affected services** (anything using `seaweedfs-storage` StorageClass):
+- homenetes: immich, immich-model-cache
+- media: jellyfin and *arr stack
+- monitoring: prometheus, alertmanager
+
+**Fix**: Must restart all affected pods after CSI mount restart to get fresh mount handles.
+
 ### Still TODO
 
-1. **Clean dangling images on gpa-server** (only did monkeybusiness):
+1. **Complete Immich recovery** - see section above
+
+2. **Clean dangling images on gpa-server** (only did monkeybusiness):
    ```bash
    ssh gpa-server "sudo crictl rmi --prune"
    ```
-
-2. **Investigate default namespace databases**:
-   - default/immich-db (84G WAL) and default/vaultwarden-db are orphaned (no Flux labels)
-   - Duplicates of homenetes/* - should probably delete them
 
 3. **Fix S3 credentials for cnpg-backups**:
    - Compare working lotus-lake creds vs broken ones
    - Re-enable backups once fixed
 
-4. **Investigate remaining disk usage** on monkeybusiness:
+4. **Investigate SeaweedFS FUSE performance**:
+   - rsync through FUSE mount was ~7 files/minute (very slow)
+   - May indicate underlying issue with CSI or SeaweedFS config
+
+5. **Investigate remaining disk usage** on monkeybusiness:
    - ~220GB still unaccounted after SeaweedFS + images + PVCs
    - Likely containerd layers/snapshots
 
