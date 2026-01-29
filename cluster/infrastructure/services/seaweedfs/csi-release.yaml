@@ -40,6 +40,16 @@ spec:
     # Storage class settings (chart uses flat keys, not nested)
     isDefaultStorageClass: true
 
+    # Pin to stable versions (avoid :dev/:latest memory leaks)
+    seaweedfsCsiPlugin:
+      image: chrislusf/seaweedfs-csi-driver:v1.4.2
+
+    mountService:
+      image: chrislusf/seaweedfs-mount:v1.4.2
+
+    # Disable file caching to prevent memory growth
+    cacheCapacityMB: 0
+
     # CSI controller - lightweight, can run on control plane
     controller:
       replicas: 1
