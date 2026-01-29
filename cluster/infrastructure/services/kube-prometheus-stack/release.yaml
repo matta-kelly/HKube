@@ -26,7 +26,7 @@ spec:
     grafana:
       enabled: true
       nodeSelector:
-        storage.h-kube.io/bulk: "true"
+        kubernetes.io/hostname: monkeybusiness
 
       # Grafana configuration
       grafana.ini:
@@ -60,7 +60,7 @@ spec:
     prometheus:
       prometheusSpec:
         nodeSelector:
-          storage.h-kube.io/bulk: "true"
+          kubernetes.io/hostname: monkeybusiness
         retention: 7d
         storageSpec:
           volumeClaimTemplate:
@@ -74,7 +74,7 @@ spec:
     alertmanager:
       alertmanagerSpec:
         nodeSelector:
-          storage.h-kube.io/bulk: "true"
+          kubernetes.io/hostname: monkeybusiness
         storage:
           volumeClaimTemplate:
             spec:
