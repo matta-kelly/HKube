@@ -40,12 +40,13 @@ spec:
     # Storage class settings (chart uses flat keys, not nested)
     isDefaultStorageClass: true
 
-    # Pin to stable versions (avoid :dev/:latest memory leaks)
+    # Use latest - contains memory leak fixes from SeaweedFS 4.x
+    # (v1.4.2 had goroutine leak in FUSE Read, fixed in later builds)
     seaweedfsCsiPlugin:
-      image: chrislusf/seaweedfs-csi-driver:v1.4.2
+      image: chrislusf/seaweedfs-csi-driver:latest
 
     mountService:
-      image: chrislusf/seaweedfs-mount:v1.4.2
+      image: chrislusf/seaweedfs-mount:latest
 
     # Disable file caching to prevent memory growth
     cacheCapacityMB: 0
