@@ -30,46 +30,42 @@
 3. **CNPG database backups** - Disabled failing archives to stop WAL bloat:
    - **STATUS**: All failing backups disabled, WAL will auto-recycle
 
-### CNPG Backup Status (as of 2026-01-29)
+### CNPG Backup Status (updated 2026-01-29 17:30)
 
 | Namespace | Cluster | Backup Status | WAL Size | Notes |
 |-----------|---------|---------------|----------|-------|
 | airbyte | airbyte-db | DISABLED | 577M | Was 95GB, recovered |
-| authentik | authentik-db | DISABLED | 150G | Waiting for checkpoint |
-| default | immich-db | DISABLED | 84G | Orphaned, kubectl patched |
+| authentik | authentik-db | DISABLED | 578M | Was 150GB, recovered |
+| default | immich-db | DISABLED | 84G | Orphaned, kubectl patched, not recovering |
 | default | vaultwarden-db | DISABLED | 321M | Orphaned, kubectl patched |
-| homenetes | immich-db | DISABLED | 23G | kubectl patched, update homenetes repo |
-| homenetes | vaultwarden-db | DISABLED | 8.2G | kubectl patched, update homenetes repo |
-| lotus-lake | dagster-db | **Working** | 577M | Different creds, actually working |
-| lotus-lake | ducklake-db | **Working** | 577M | Different creds, actually working |
+| homenetes | immich-db | DISABLED | 593M | Was 23GB, recovered |
+| homenetes | vaultwarden-db | DISABLED | 8.2G | Should recover after checkpoint |
+| lotus-lake | dagster-db | **Working** | 561M | Different creds, working |
+| lotus-lake | ducklake-db | **Working** | 673M | Different creds, working |
 
 **Root cause**: S3 credentials for `cnpg-backups` bucket are broken. lotus-lake databases use different credentials that work.
 
+**Repos updated**:
+- h-kube: airbyte-db, authentik-db (committed to Forgejo)
+- homenetes: immich-db, vaultwarden-db (committed to Forgejo)
+- default/*: orphaned, kubectl patched only (no Git source)
+
 ### Still TODO
 
-1. **Update homenetes repo** to persist backup disable:
-   - kubectl patches will revert on Flux reconcile
-   - Clone `ssh://git@forgejo.datamountainsolutions.com:2222/mkultra/homenetes`
-   - Comment out backup sections in immich-db and vaultwarden-db
-
-2. **Clean dangling images on gpa-server** (only did monkeybusiness):
+1. **Clean dangling images on gpa-server** (only did monkeybusiness):
    ```bash
    ssh gpa-server "sudo crictl rmi --prune"
    ```
 
-3. **Investigate default namespace databases**:
-   - default/immich-db and default/vaultwarden-db are orphaned (no Flux labels)
-   - Duplicates of homenetes/* - can likely be deleted
+2. **Investigate default namespace databases**:
+   - default/immich-db (84G WAL) and default/vaultwarden-db are orphaned (no Flux labels)
+   - Duplicates of homenetes/* - should probably delete them
 
-4. **Fix S3 credentials for cnpg-backups**:
+3. **Fix S3 credentials for cnpg-backups**:
    - Compare working lotus-lake creds vs broken ones
    - Re-enable backups once fixed
 
-5. **Monitor WAL sizes**:
-   - After checkpoint, bloated WALs should shrink
-   - Verify authentik (150G) and default/immich (84G) recover
-
-6. **Investigate remaining disk usage** on monkeybusiness:
+4. **Investigate remaining disk usage** on monkeybusiness:
    - ~220GB still unaccounted after SeaweedFS + images + PVCs
    - Likely containerd layers/snapshots
 
