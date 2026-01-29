@@ -38,31 +38,30 @@ spec:
         - CREATE DATABASE temporal OWNER airbyte
         - CREATE DATABASE temporal_visibility OWNER airbyte
 
-  backup:
-    barmanObjectStore:
-      destinationPath: s3://cnpg-backups/airbyte
-      endpointURL: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
-      s3Credentials:
-        accessKeyId:
-          name: airbyte-db-backup-creds
-          key: ACCESS_KEY_ID
-        secretAccessKey:
-          name: airbyte-db-backup-creds
-          key: SECRET_ACCESS_KEY
-    retentionPolicy: "7d"
+  # backup: DISABLED - archiving was failing and accumulating 95GB of WAL
+  # TODO: Fix S3 credentials/bucket and re-enable
+  # backup:
+  #   barmanObjectStore:
+  #     destinationPath: s3://cnpg-backups/airbyte
+  #     endpointURL: http://seaweedfs-s3.seaweedfs.svc.cluster.local:8333
+  #     s3Credentials:
+  #       accessKeyId:
+  #         name: airbyte-db-backup-creds
+  #         key: ACCESS_KEY_ID
+  #       secretAccessKey:
+  #         name: airbyte-db-backup-creds
+  #         key: SECRET_ACCESS_KEY
+  #   retentionPolicy: "7d"
 
----
-# ==============================================================================
-# Scheduled Backup
-# ==============================================================================
-
-apiVersion: postgresql.cnpg.io/v1
-kind: ScheduledBackup
-metadata:
-  name: airbyte-db-backup
-  namespace: airbyte
-spec:
-  schedule: "0 0 * * *"
-  backupOwnerReference: self
-  cluster:
-    name: airbyte-db
+# ---
+# # DISABLED - backup disabled above
+# apiVersion: postgresql.cnpg.io/v1
+# kind: ScheduledBackup
+# metadata:
+#   name: airbyte-db-backup
+#   namespace: airbyte
+# spec:
+#   schedule: "0 0 * * *"
+#   backupOwnerReference: self
+#   cluster:
+#     name: airbyte-db
