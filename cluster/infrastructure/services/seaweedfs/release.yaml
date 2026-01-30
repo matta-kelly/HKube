@@ -32,14 +32,16 @@ spec:
   values:
     # Upgrade to 4.07 for memory leak fix (PR #6813)
     # See: https://github.com/seaweedfs/seaweedfs/pull/6813
-    image:
-      tag: "4.07"
+    # Note: Must use imageOverride per component (chart 3.x has inconsistent image.tag handling)
+    global:
+      imageName: chrislusf/seaweedfs:4.07
 
     # -------------------------------------------------------------------------
     # Master - manages topology, runs on control plane (stable, always-on)
     # defaultReplication "001" = replicate once in same rack (both home nodes)
     # -------------------------------------------------------------------------
     master:
+      imageOverride: chrislusf/seaweedfs:4.07
       enabled: true
       replicas: 1
       defaultReplication: "001"
@@ -55,6 +57,7 @@ spec:
     # Anti-affinity ensures one volume per node (gpa-server + monkeybusiness)
     # -------------------------------------------------------------------------
     volume:
+      imageOverride: chrislusf/seaweedfs:4.07
       enabled: true
       replicas: 2
       nodeSelector: |
@@ -79,6 +82,7 @@ spec:
     # Filer - metadata + embedded S3, runs on control plane (stable, always-on)
     # -------------------------------------------------------------------------
     filer:
+      imageOverride: chrislusf/seaweedfs:4.07
       enabled: true
       replicas: 1
       nodeSelector: |
@@ -97,6 +101,7 @@ spec:
     # Authentication required for Airbyte S3 destination (sends signed requests)
     # -------------------------------------------------------------------------
     s3:
+      imageOverride: chrislusf/seaweedfs:4.07
       enabled: true
       enableAuth: true
       existingConfigSecret: seaweedfs-s3-config
