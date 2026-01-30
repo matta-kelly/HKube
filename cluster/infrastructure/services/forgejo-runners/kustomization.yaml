@@ -1,17 +1,10 @@
 # ==============================================================================
-# Infrastructure Services
+# Forgejo Runners Kustomization
 # ==============================================================================
-# These may depend on CRDs from controllers (e.g., authentik needs cnpg)
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - airbyte
-  - authentik
-  - cube
-  - forgejo-runners
-  - headscale-ui
-  - homepage
-  - kube-prometheus-stack
-  - seaweedfs
-  - vault
+  - namespace.yaml
+  - secret.yaml
+  - deployment.yaml

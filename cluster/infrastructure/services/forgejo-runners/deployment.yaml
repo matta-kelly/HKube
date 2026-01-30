@@ -1,0 +1,126 @@
+# ==============================================================================
+# Forgejo Actions Runner with Docker-in-Docker
+# ==============================================================================
+# Runs CI/CD workflows with `runs-on: docker` label.
+# Uses DinD sidecar for Docker operations (building images, docker compose, etc.)
+#
+# Reference: https://forgejo.org/docs/latest/admin/actions/
+# ==============================================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: forgejo-runner
+  namespace: forgejo-runners
+  labels:
+    app: forgejo-runner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: forgejo-runner
+  template:
+    metadata:
+      labels:
+        app: forgejo-runner
+    spec:
+      # -------------------------------------------------------------------------
+      # Volumes for DinD TLS certs and runner data
+      # -------------------------------------------------------------------------
+      volumes:
+        # TLS certificates shared between runner and dind
+        - name: docker-certs
+          emptyDir: {}
+        # Runner working directory (ephemeral per pod)
+        - name: runner-data
+          emptyDir: {}
+
+      containers:
+        # -----------------------------------------------------------------------
+        # Forgejo Actions Runner
+        # -----------------------------------------------------------------------
+        - name: runner
+          image: gitea/act_runner:latest
+          imagePullPolicy: Always
+
+          env:
+            # Forgejo server URL
+            - name: GITEA_INSTANCE_URL
+              value: "https://forgejo.datamountainsolutions.com"
+
+            # Registration token from secret
+            - name: GITEA_RUNNER_REGISTRATION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: forgejo-runner-token
+                  key: registration-token
+
+            # Runner identification
+            - name: GITEA_RUNNER_NAME
+              value: "h-kube-runner"
+
+            # Labels this runner accepts (matches runs-on: docker)
+            - name: GITEA_RUNNER_LABELS
+              value: "docker:docker://node:20-bookworm,ubuntu-latest:docker://ubuntu:latest,ubuntu-22.04:docker://ubuntu:22.04"
+
+            # Connect to DinD sidecar via TLS
+            - name: DOCKER_HOST
+              value: "tcp://localhost:2376"
+            - name: DOCKER_TLS_VERIFY
+              value: "1"
+            - name: DOCKER_CERT_PATH
+              value: "/certs/client"
+
+          volumeMounts:
+            - name: docker-certs
+              mountPath: /certs/client
+              subPath: client
+              readOnly: true
+            - name: runner-data
+              mountPath: /data
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+
+        # -----------------------------------------------------------------------
+        # Docker-in-Docker Sidecar
+        # -----------------------------------------------------------------------
+        - name: dind
+          image: docker:27-dind
+
+          securityContext:
+            privileged: true
+
+          env:
+            # Generate TLS certs for secure communication
+            - name: DOCKER_TLS_CERTDIR
+              value: "/certs"
+
+          volumeMounts:
+            - name: docker-certs
+              mountPath: /certs
+            - name: runner-data
+              mountPath: /data
+
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 4
+              memory: 8Gi
+
+          # DinD needs time to start and generate certs
+          readinessProbe:
+            exec:
+              command:
+                - docker
+                - info
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 6
