@@ -60,8 +60,9 @@ spec:
               value: "h-kube-runner"
 
             # Labels this runner accepts (matches runs-on: docker)
+            # lotus-lake-ci: Custom image with dbt, helm, dagster pre-installed
             - name: GITEA_RUNNER_LABELS
-              value: "docker:docker://node:20-bookworm,ubuntu-latest:docker://ubuntu:latest,ubuntu-22.04:docker://ubuntu:22.04"
+              value: "lotus-lake-ci:docker://forgejo.datamountainsolutions.com/mkultra/lotus-lake-ci:latest,docker:docker://node:20-bookworm,ubuntu-latest:docker://ubuntu:latest,ubuntu-22.04:docker://ubuntu:22.04"
 
             # Connect to DinD sidecar via TLS
             - name: DOCKER_HOST
@@ -92,6 +93,11 @@ spec:
         # -----------------------------------------------------------------------
         - name: dind
           image: docker:27-dind
+
+          # MTU must match pod network (Flannel over Tailscale = ~1230)
+          # Without this, large packets (TLS certs) get fragmented and dropped
+          args:
+            - "--mtu=1200"
 
           securityContext:
             privileged: true
