@@ -30,6 +30,11 @@ spec:
       retries: 3
 
   values:
+    # Upgrade to 4.07 for memory leak fix (PR #6813)
+    # See: https://github.com/seaweedfs/seaweedfs/pull/6813
+    image:
+      tag: "4.07"
+
     # -------------------------------------------------------------------------
     # Master - manages topology, runs on control plane (stable, always-on)
     # defaultReplication "001" = replicate once in same rack (both home nodes)
