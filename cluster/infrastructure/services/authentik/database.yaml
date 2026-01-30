@@ -13,10 +13,10 @@ spec:
   # PostgreSQL version
   imageName: ghcr.io/cloudnative-pg/postgresql:16.2
 
-  # Run on bulk storage node (gpa-server)
+  # Run on control plane for stability
   affinity:
     nodeSelector:
-      storage.h-kube.io/bulk: "true"
+      kubernetes.io/hostname: cloud-cp-1
 
   # Primary storage
   storage:

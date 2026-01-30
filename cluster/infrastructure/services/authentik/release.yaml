@@ -76,11 +76,11 @@ spec:
       enabled: false
 
     # -------------------------------------------------------------------------
-    # Server - run on nodes with bulk storage
+    # Server - run on control plane for stability
     # -------------------------------------------------------------------------
     server:
       nodeSelector:
-        storage.h-kube.io/bulk: "true"
+        kubernetes.io/hostname: cloud-cp-1
       ingress:
         enabled: true
         ingressClassName: traefik
@@ -98,12 +98,12 @@ spec:
               - auth.landl.datamountainsolutions.com
 
     # -------------------------------------------------------------------------
-    # Worker - run on nodes with bulk storage
+    # Worker - run on control plane for stability
     # -------------------------------------------------------------------------
     worker:
       replicas: 1
       nodeSelector:
-        storage.h-kube.io/bulk: "true"
+        kubernetes.io/hostname: cloud-cp-1
 
   # Note: Secrets are injected via global.env instead of valuesFrom
   # This ensures they're passed directly as environment variables
