@@ -209,6 +209,8 @@
     rule: allow
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
+    interface: "{{ item.interface | default(omit) }}"
+    direction: in
   loop: "{{ firewall_allow_ports | default([]) }}"
 
 - name: Enable UFW
